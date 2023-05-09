@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# Basic command-line ChatGPT-API repr in Bash, taking advantage of shell tools
+# like readline, syntax highlighting, prompt formatting, etc.
+#
+# Dependencies: bash, jq, mdo (mdo is optional: set use_formatter=0 to avoid mdo)
+#
+# Model choices/explanations at:
+#   https://learn.microsoft.com/en-us/azure/cognitive-services/openai/concepts/models
+# More detailed usage instructions for these models in terms of crafting queries:
+#   https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/chatgpt?pivots=programming-language-chat-completions
+# Details about additional chatgpt parameters for tuning functionality:
+#   https://platform.openai.com/docs/api-reference/chat/create
+#
+# Author: Andy Ganse
+# License: MIT License
+
+
+use_formatter=1  # 0=no syntax highlighting via mdo, just line wrap; 1=use mdo
+testlevel=0      # 0=normal use; 1=verbose/debug api contents; 2=local prompt-return only
+
+# note continued lines for long string must begin in 1st char of line, no indents:
+messages='{"role": "system", "content": "The following is a conversation with '
+messages+='an AI assistant. The assistant is helpful, creative, clever, and friendly. '
+messages+='Its answers are polite and friendly but brief, only rarely exceeding '
+messages+='a single paragraph when really necessary to explain a point. '
+messages+='Mathematical answers and expressions written by the assistant should '
+messages+='are always formatted in unicode characters rather than latex. '
+messages+='The assistant uses occasional emojis in its writing."}'
+
+i=1  # count of user messages (cycles), as $cost increases with history-length
+while :
+do
+    echo
+    echo "(${i}) Me: "
+    read -e userinput
+    userinput="${userinput//\"/\\\"}"  
+    userinput="${userinput//\'/''''}"  
+    messages+=( '{"role": "user", "content": "'"${userinput}"'"}' )
+
+    # convert messages list into comma-separated string, removing final comma:
+    commasep_messages_string=$(printf '%s,' "${messages[@]}")
+    commasep_messages_string=${commasep_messages_string%?}  
+
+    curlstmt=$(cat <<EOS
+    curl -s -X POST 'https://api.openai.com/v1/chat/completions' \
+    --header 'Authorization: Bearer ${OPENAI_API_KEY}' \
+    --header 'Content-Type: application/json' \
+    --data-raw '{
+     "model": "gpt-3.5-turbo",
+     "messages": [${commasep_messages_string}]
+    }'
+    EOS)
+
+
+    if [ "$testlevel" -ge "1" ]; then
+        echo "${curlstmt}"
+    fi
+
+    if [ "$testlevel" -lt "2" ]; then
+        output=$(eval ${curlstmt})
+        if [ "$testlevel" -eq "1" ]; then
+            echo ${output}
+        fi
+
+        error=$(echo ${output} | jq '.error.message // empty')
+
+        if [ ! -z "${error}" ]; then
+            echo "${error}"
+        else
+            response=$(echo ${output} | jq '.choices[0]'.message.content)
+            response=${response:1:${#response}-2}  # remove surrounding double-quotes
+
+            echo
+            echo "(${i}) GPT: "
+            twidth=$(stty size | awk '{print $2}')
+            if [ "${use_formatter}" -eq "1" ]; then
+                printf "${response}\n" > /tmp/chatgpt$$
+                mdo --no-pager -w ${twidth} /tmp/chatgpt$$
+                # or the following instead of mdo, but not very good:
+                #printf "${response}\n" | pygmentize -l markdown
+            else
+                # requery terminal width in case changed since last round
+                responseout=$(echo ${response} | fold -sw ${twidth})
+                printf "${responseout}\n"
+            fi
+
+            # looks like chatgpt already escapes its own double quotes
+            response="${response//\'/''''}"        # escape single quotes
+            response="${response//\%/\\\%}"        # escape %
+            messages+=( '{"role": "assistant", "content": "'"${response}"'"}' )
+            
+        fi
+    fi
+
+    i=$((i+1))
+done
+
