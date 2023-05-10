@@ -42,12 +42,14 @@ your shell environment, e.g. `export OPENAI_API_KEY=xyz123...`
 3. It's not required, but if you wish to have the syntax highlighting and other
 formatting in running the client, you'll need to install `rich-cli`, either 
 via `brew install rich-cli` or `pip install rich-cli`.
-
 If you choose to skip installing this, set `use_formatter=0` in
 the top of the chatgpt script.  (It's set to use it by default `=1`).  It can
 always be changed later.
 
-4. Run the chatgpt script - no arguments currently - and that'll start the client.
+4. Run the chatgpt script - no arguments currently - and that'll start the
+client.  Ctrl-C to quit.  The client's command line uses readline, so all the
+usual hot keys / editing work including a command history via Ctrl-P and Ctrl-N.
+Expect that there are definitely slow times for this popular API service.
 
 
 ## Dependencies
