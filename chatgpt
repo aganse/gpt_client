@@ -24,7 +24,7 @@ output_tokens=1  # 0=don't list tokens per transaction; 1=do list at end of each
 testlevel=0      # 0=normal use; 1=verbose/debug api contents; 2=local prompt-return only
                  # CAUTION: testlevel>0 can expose your OPENAI_API_KEY in terminal!
 
-# note continued lines for long string must begin in 1st char of line, no indents:
+# Initial message describing role of system, defining scope/form of interactions
 messages='{"role": "system", "content": "The following is a conversation with '
 messages+='an AI assistant. The assistant is helpful, creative, clever, and friendly. '
 messages+='Its answers are polite and friendly but brief, only rarely exceeding '
@@ -34,7 +34,7 @@ messages+='Mathematical answers and expressions written by the assistant should 
 messages+='are always formatted in unicode characters rather than latex. '
 messages+='And the assistant uses occasional emojis in its writing to show enthusiasm."}'
 
-i=1  # count of user messages (cycles), as $cost increases with history-length
+i=1  # count of user messages (rounds) in present repr, as tokens increase with history-length
 while :
 do
     echo
@@ -48,7 +48,7 @@ do
     userinput="${userinput//\'/''''}"  
     messages+=( '{"role": "user", "content": "'"${userinput}"'"}' )
 
-    # convert messages list into comma-separated string, removing final comma:
+    # Convert messages list into comma-separated string, removing final comma:
     commasep_messages_string=$(printf '%s,' "${messages[@]}")
     commasep_messages_string=${commasep_messages_string%?}  
 
@@ -120,7 +120,7 @@ do
                 fi
             fi
 
-            # looks like chatgpt already escapes its own double quotes
+            # Looks like chatgpt already escapes its own double quotes...
             response="${response//\'/''''}"        # escape single quotes
             response="${response//\%/\\\%}"        # escape %
             response="${response//\~/\\\~}"        # escape ~
