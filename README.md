@@ -1,27 +1,21 @@
 # openai_llm_tools
 Bash CLI tools to access the OpenAI LLM APIs, starting with a ChatGPT client.
 
-OpenAI serves a ChatGPT web client on its webpage, whereas this is a CLI in the
-terminal for those of us who prefer that when possible (especially in my own
-use I'm generally either verifying mathematical steps or asking ChatGPT for
-code snippets that I'm pasting elsewhere in the same terminal.  There's another
-popular CLI based ChatGPT client out there called 
-[Shell-GPT](https://pypi.org/project/shell-gpt)
-which has nice aspects but also some functionality I'd like to avoid such as
-execution of ChatGPT results; this one I made is more narrowly focused, with
-output formatting that I prefer, and is <100 lines in a single Bash script so
-it's easy for me to follow exactly what it's doing.
-Do note that any client outside of the one on OpenAI's website (which is free
-for ChatGPT only) requires an
-[API key](https://platform.openai.com/account/api-keys)
-to access the API, and that making calls to this API does 
+OpenAI serves a ChatGPT web client on its webpage, but I really prefer to keep
+certain things in the terminal, especially if I often copy/paste the results
+into a neighboring tmux pane.  There's another popular CLI based ChatGPT client
+out there called [Shell-GPT](https://pypi.org/project/shell-gpt) which has many
+nice aspects but I made my CLI more narrowly focused, with output formatting
+that I prefer, and it's only about 100 lines in a single Bash script so it's
+easy for me to follow exactly what it's doing.
+
+Be aware any client outside of the one on OpenAI's website (which is free for
+ChatGPT) requires an [API key](https://platform.openai.com/account/api-keys) to
+access the API, and making calls to this API does 
 [cost money](https://openai.com/pricing#language-models).
-However, notice that it's REALLY cheap as long as the context is just using
-it oneself for reference (as opposed to serving it out to zillions of other
-users to use in a web app).  In the past few days I've been using this script
-to access ChatGPT, ie gpt-3.5-turbo, moderately heavily, and from that have
-racked up a grand total by now of $0.20.  (Surely pricing will vary over time
-and depend on details, but it gives you some frame of reference.)
+However, it's really cheap if just using it oneself for reference queries (as
+opposed to serving it out to zillions of other users to use in a web app).
+Like in two days of fairly heavy usage I've racked up a whole $0.20.
 
 
 `chatgpt`: Basic command-line ChatGPT-API client in Bash, implementing shell
@@ -37,25 +31,29 @@ the width of the current terminal window.
 
 ## Usage
 
-1. Get yourself an 
-[API key](https://platform.openai.com/account/api-keys).
-(Requires creating an OpenAI account if you don't have one already.)
+1. Get an [API key](https://platform.openai.com/account/api-keys) (requires
+creating an OpenAI account if you don't have one already) and put that key in
+your shell environment, e.g. `export OPENAI_API_KEY=xyz123...`
 
-2. Put that key in your shell environment, e.g. `export OPENAI_API_KEY=xyz123...`
+2. Install `jq` and `rlwrap`, which are standard linux tools.
+(`sudo apt install jq` and `sudo apt install rlwrap`, or `brew install jq` and
+`brew install rlwrap`...)
 
 3. It's not required, but if you wish to have the syntax highlighting and other
-formatting in running the client, you'll need to `pip install rich-cli`, whether
-you prefer to do so in a python environment or in your user environment (for the
-latter, ie applying everywhere in your linux account, append `--user` to the end
-of that pip command line).  If you choose to skip this, set `use_formatter=0` in
-the top of the chatgpt script.  It's set to use it by default (`=1`).
+formatting in running the client, you'll need to install `rich-cli`, either 
+via `brew install rich-cli` or `pip install rich-cli`.
 
-4. Run the chatgpt script - no arguments currently - and that'll start the repr.
+If you choose to skip installing this, set `use_formatter=0` in
+the top of the chatgpt script.  (It's set to use it by default `=1`).  It can
+always be changed later.
+
+4. Run the chatgpt script - no arguments currently - and that'll start the client.
 
 
 ## Dependencies
 * bash
 * jq
+* rlwrap
 * rich-cli (optional, adds syntax highlighting and other such formatting)
 
 

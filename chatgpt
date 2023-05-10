@@ -3,7 +3,7 @@
 # Basic command-line ChatGPT-API repr in Bash, taking advantage of shell tools
 # like readline, syntax highlighting, prompt formatting, etc.
 #
-# Dependencies: bash, jq, rich-cli (rich-cli is optional: set use_formatter=0 to skip it)
+# Dependencies: bash, jq, rlwrap, rich-cli (rich-cli is optional: set use_formatter=0 to skip it)
 #
 # Model choices/explanations at:
 #   https://learn.microsoft.com/en-us/azure/cognitive-services/openai/concepts/models
@@ -21,8 +21,6 @@ formatter_style="monokai"  # for rich-cli formatting (see https://pygments.org/s
 me_icon=")"    # " 🔵"
 gpt_icon=")"   # " 🟠"
 output_tokens=1  # 0=don't list tokens per transaction; 1=do list at end of each response
-testlevel=0      # 0=normal use; 1=verbose/debug api contents; 2=local prompt-return only
-                 # CAUTION: testlevel>0 can expose your OPENAI_API_KEY in terminal!
 
 # Initial message describing role of system, defining scope/form of interactions
 messages='{"role": "system", "content": "The following is a conversation with '
@@ -34,7 +32,7 @@ messages+='Mathematical answers and expressions written by the assistant should 
 messages+='are always formatted in unicode characters rather than latex. '
 messages+='And the assistant uses occasional emojis in its writing to show enthusiasm."}'
 
-i=1  # count of user messages (rounds) in present repr, as tokens increase with history-length
+i=1  # count of user messages
 while :
 do
     echo
@@ -43,92 +41,80 @@ do
     else
         echo "${i}${me_icon} Me: "
     fi
-    read -e userinput
-    userinput="${userinput//\"/\\\"}"  
-    userinput="${userinput//\'/''''}"  
+    HISTORY=$HOME/.chatgpt_history
+    userinput=$(rlwrap -H $HISTORY sh -c 'read REPLY && echo $REPLY')
+    userinput="${userinput//\"/\\\"}"        # escape \
+    #userinput="${userinput//\'/''''}"       # escape ' 
+    userinput="${userinput//\~/\\\~}"        # escape ~
+    userinput="${userinput//\*/\\*}"         # escape *
     messages+=( '{"role": "user", "content": "'"${userinput}"'"}' )
 
     # Convert messages list into comma-separated string, removing final comma:
-    commasep_messages_string=$(printf '%s,' "${messages[@]}")
-    commasep_messages_string=${commasep_messages_string%?}  
+    msgs_string=$(printf '%s,' "${messages[@]}")
+    msgs_string=${msgs_string%?}  
 
-    curlstmt=$(cat <<EOS
-    curl -s -X POST 'https://api.openai.com/v1/chat/completions' \
-    --header 'Authorization: Bearer ${OPENAI_API_KEY}' \
-    --header 'Content-Type: application/json' \
-    --data-raw '{
-     "model": "gpt-3.5-turbo",
-     "messages": [${commasep_messages_string}]
-    }'
-    EOS)
+    output=$(                                                                  \
+    curl -s -X POST "https://api.openai.com/v1/chat/completions"               \
+    --header "Authorization: Bearer ${OPENAI_API_KEY}"                         \
+    --header "Content-Type: application/json"                                  \
+    --data-raw '{ "model": "gpt-3.5-turbo", "messages": ['"${msgs_string}"'] }'\
+    )
 
+    # echo "${output}"
 
-    if [ "$testlevel" -ge "1" ]; then
-        echo "${curlstmt}"
-    fi
+    error=$(echo "${output}" | jq '.error.message // empty')
 
-    if [ "$testlevel" -lt "2" ]; then
-        output=$(eval ${curlstmt})
-        if [ "$testlevel" -eq "1" ]; then
-            echo ${output}
+    if [ ! -z "${error}" ]; then
+        echo "${error}"
+    else
+        if [ "${output_tokens}" -eq "1" ]; then
+            prompt_tokens=$(echo "${output}" | jq .usage.prompt_tokens)
+            completion_tokens=$(echo "${output}" | jq .usage.completion_tokens)
+            if [ "${use_formatter}" -eq "1" ]; then
+                echo "[${prompt_tokens} tokens; includes message history in this session]" | \
+                    rich - --force-terminal -s "#bbbbbb"
+            else
+                echo "[${prompt_tokens} tokens; includes message history in this session]"
+            fi
         fi
+        response=$(echo "${output}" | jq '.choices[0]'.message.content)
+        response=${response:1:${#response}-2}  # remove surrounding double-quotes
+        # escape for string printing, not exactly same as escapes for json:
+        responseout="${response//\%/\%\%}"         # escape %
+        #responseout="${responseout//\\/\\\\}"     # escape \
 
-        error=$(echo ${output} | jq '.error.message // empty')
-
-        if [ ! -z "${error}" ]; then
-            echo "${error}"
+        echo
+        if [ "${use_formatter}" -eq "1" ]; then
+            echo "**${i}${gpt_icon} GPT:**" | rich --markdown - --force-terminal
         else
-            if [ "${output_tokens}" -eq "1" ]; then
-                prompt_tokens=$(echo ${output} | jq .usage.prompt_tokens)
-                completion_tokens=$(echo ${output} | jq .usage.completion_tokens)
-                if [ "${use_formatter}" -eq "1" ]; then
-                    echo "[${prompt_tokens} tokens (remember includes all message history in this session)]" | rich - --force-terminal -s "#aaaaaa"
-                else
-                    echo "[${prompt_tokens} tokens (remember includes all message history in this session)]"
-                fi
-            fi
-            response=$(echo ${output} | jq '.choices[0]'.message.content)
-            response=${response:1:${#response}-2}  # remove surrounding double-quotes
-            responseout="${response//\%/\%\%}"        # escape %
-            #responseout="${responseout//\\/\\\\}"     # escape \
-
-            echo
-            if [ "${use_formatter}" -eq "1" ]; then
-                echo "**${i}${gpt_icon} GPT:**" | rich --markdown - --force-terminal
-            else
-                echo "${i}${gpt_icon} GPT: "
-            fi
-            twidth=$(stty size | awk '{print $2}')
-            if [ "${use_formatter}" -eq "1" ]; then
-                printf "${responseout}\n" | rich --markdown --theme ${formatter_style} - --force-terminal
-
-                #printf "${responseout}\n" > /tmp/chatgpt$$
-                #mdo --no-pager -w full /tmp/chatgpt$$
-                #
-                # or the following instead of mdo, but not very good:
-                #printf "${responseout}\n" | pygmentize -l markdown
-            else
-                # requery terminal width in case changed since last round
-                responseout=$(echo ${responseout} | fold -sw ${twidth})
-                printf "${responseout}\n"
-            fi
-            if [ "${output_tokens}" -eq "1" ]; then
-                if [ "${use_formatter}" -eq "1" ]; then
-                    echo "[${completion_tokens} tokens]" | rich - --force-terminal -s "#aaaaaa"
-                else
-                    echo "[${completion_tokens} tokens]"
-                fi
-            fi
-
-            # Looks like chatgpt already escapes its own double quotes...
-            response="${response//\'/''''}"        # escape single quotes
-            response="${response//\%/\\\%}"        # escape %
-            response="${response//\~/\\\~}"        # escape ~
-            messages+=( '{"role": "assistant", "content": "'"${response}"'"}' )
-            
+            echo "${i}${gpt_icon} GPT: "
         fi
-    fi
+        twidth=$(stty size | awk '{print $2}')
+        if [ "${use_formatter}" -eq "1" ]; then
+            printf "${responseout}\n" | \
+                rich --markdown --theme ${formatter_style} - --force-terminal
+        else
+            # requery terminal width in case changed since last round
+            responseout=$(echo ${responseout} | fold -sw ${twidth})
+            printf "${responseout}\n"
+        fi
+        if [ "${output_tokens}" -eq "1" ]; then
+            if [ "${use_formatter}" -eq "1" ]; then
+                echo "[${completion_tokens} tokens]" | \
+                    rich - --force-terminal -s "#aaaaaa"
+            else
+                echo "[${completion_tokens} tokens]"
+            fi
+        fi
 
+        # chatgpt already escapes its own double quotes...
+        response="${response//\'/''''}"        # escape single quotes
+        response="${response//\%/\\\%}"        # escape %
+        response="${response//\~/\\\~}"        # escape ~
+        response="${response//\*/\\\*}"         # escape *
+        messages+=( '{"role": "assistant", "content": "'"${response}"'"}' )
+        
+    fi
     i=$((i+1))
 done
 
