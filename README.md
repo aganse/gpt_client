@@ -25,9 +25,11 @@ line arguments yet; currently the few options are at the top of the bash script
 ./chatgpt script and then you're at the client prompt.  Contents auto-wrap to
 the width of the current terminal window.
 
+
 ------
 ![screenshot](screenshot.png "Screenshot")
 ------
+
 
 ## Usage
 
