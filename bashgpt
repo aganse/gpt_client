@@ -2,6 +2,8 @@
 
 # Basic command-line ChatGPT-API repr in Bash, taking advantage of shell tools
 # like readline, syntax highlighting, prompt formatting, etc.
+# Usage: for now the options are all in vars at top of script, not in cmdline args
+# yet; you can keep the default vars and run ./bashgpt at the commandline to start.
 #
 # Dependencies: bash, jq, rlwrap, rich-cli (rich-cli is optional: set use_formatter=0 to skip it)
 #
@@ -16,11 +18,15 @@
 # License: MIT License
 
 
-use_formatter=1  # 0=no syntax highlighting via mdo, just line wrap; 1=use mdo
-formatter_style="monokai"  # for rich-cli formatting (see https://pygments.org/styles)
-me_icon=")"    # " 🔵"
-gpt_icon=")"   # " 🟠"
+# in the following settings, 0=no and 1=yes:
 output_tokens=1  # 0=don't list tokens per transaction; 1=do list at end of each response
+use_formatter=1  # 0=no syntax highlighting via mdo, just line wrap; 1=use mdo
+debug=0          # 0=normal mode; 1=debug mode listing input/output json api content
+formatter_style="vs"  # for rich-cli formatting (see https://pygments.org/styles)
+                           # I like "monokai" in dark mode and "vs" in light mode
+model="gpt-3.5-turbo"      # "gpt-3.5-turbo" or "gpt-4" (note gpt-4 has a waitlist)
+me_prompt=") Me:"     # " 🔵"
+gpt_prompt=") ${gpt_prompt}$(echo ${model} | tr 'gpt' 'GPT')"   # " 🟠"
 
 # Initial message describing role of system, defining scope/form of interactions
 messages='{"role": "system", "content": "The following is a conversation with '
@@ -37,9 +43,9 @@ while :
 do
     echo
     if [ "${use_formatter}" -eq "1" ]; then
-        echo "**${i}${me_icon} Me:**" | rich --markdown - --force-terminal
+        echo "**${i}${me_prompt}**" | rich --markdown - --force-terminal
     else
-        echo "${i}${me_icon} Me: "
+        echo "${i}${me_prompt}"
     fi
     HISTORY=$HOME/.chatgpt_history
     userinput=$(rlwrap -H $HISTORY sh -c 'read REPLY && echo $REPLY')
@@ -53,14 +59,20 @@ do
     msgs_string=$(printf '%s,' "${messages[@]}")
     msgs_string=${msgs_string%?}  
 
+    if [ "${debug}" -eq "1" ]; then
+        echo "INPUT: ${msgs_string}"
+    fi
+
     output=$(                                                                  \
     curl -s -X POST "https://api.openai.com/v1/chat/completions"               \
     --header "Authorization: Bearer ${OPENAI_API_KEY}"                         \
     --header "Content-Type: application/json"                                  \
-    --data-raw '{ "model": "gpt-3.5-turbo", "messages": ['"${msgs_string}"'] }'\
+    --data-raw '{ "model": "'"${model}"'", "messages": ['"${msgs_string}"'] }' \
     )
 
-    # echo "${output}"
+    if [ "${debug}" -eq "1" ]; then
+        echo "OUTPUT: ${output}"
+    fi
 
     error=$(echo "${output}" | jq '.error.message // empty')
 
@@ -85,9 +97,9 @@ do
 
         echo
         if [ "${use_formatter}" -eq "1" ]; then
-            echo "**${i}${gpt_icon} GPT:**" | rich --markdown - --force-terminal
+            echo "**${i}${gpt_prompt}**" | rich --markdown - --force-terminal
         else
-            echo "${i}${gpt_icon} GPT: "
+            echo "${i}${gpt_prompt}"
         fi
         twidth=$(stty size | awk '{print $2}')
         if [ "${use_formatter}" -eq "1" ]; then

@@ -18,11 +18,11 @@ opposed to serving it out to zillions of other users to use in a web app).
 Like in two days of fairly heavy usage I've racked up a whole $0.20.
 
 
-`chatgpt`: Basic command-line ChatGPT-API client in Bash, implementing shell
+`bashgpt`: Basic command-line ChatGPT-API client in Bash, implementing shell
 tools like readline, syntax highlighting, prompt formatting, etc.  No command
 line arguments yet; currently the few options are at the top of the bash script
 (I'll move them to command line args soon).  So for now simply run the
-./chatgpt script and then you're at the client prompt.  Contents auto-wrap to
+./bashgpt script and then you're at the client prompt.  Contents auto-wrap to
 the width of the current terminal window.
 
 
@@ -45,10 +45,10 @@ your shell environment, e.g. `export OPENAI_API_KEY=xyz123...`
 formatting in running the client, you'll need to install `rich-cli`, either 
 via `brew install rich-cli` or `pip install rich-cli`.
 If you choose to skip installing this, set `use_formatter=0` in
-the top of the chatgpt script.  (It's set to use it by default `=1`).  It can
+the top of the bashgpt script.  (It's set to use it by default `=1`).  It can
 always be changed later.
 
-4. Run the chatgpt script - no arguments currently - and that'll start the
+4. Run the bashgpt script - no arguments currently - and that'll start the
 client.  Ctrl-C to quit.  The client's command line uses readline, so all the
 usual hot keys / editing work including a command history via Ctrl-P and Ctrl-N.
 Expect that there are definitely slow times for this popular API service.
