@@ -21,7 +21,7 @@ from rich.markdown import Markdown
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 # set up the readline handling
-readline.parse_and_bind("bind ^I rl_complete")
+readline.parse_and_bind("bind '\\t' rl_complete")
 history_file = os.path.expanduser('~/.gpt_history')
 if os.path.exists(history_file):
     readline.read_history_file(history_file)
@@ -41,6 +41,9 @@ messages = [
 
 
 def generate_response(input):
+    # hmm "if input:" doesn't seem to catch empty input as expected...?
+    # might have to do with escape chars in prompt...?
+    # works at first but not after there's been a response from gpt...
     if input:
         messages.append({"role": "user", "content": input})
         chat = openai.ChatCompletion.create(
@@ -52,17 +55,16 @@ def generate_response(input):
 
 
 class GptInterpreter(Cmd):
-    model = "gpt3.5-turbo"
-    prompt = "Me: "  # replaces default prompt of "(Cmd) " from cmdloop
-    # myprompt = "[bold purple]Me[/bold purple]:  "
-    gptprompt = "GPT: "
-    # gptprompt = "\n[bold blue]GPT[/bold blue]:  "
+    model = "gpt-3.5-turbo"  # set this in one spot with default & cmdline arg
+    # prompt = "Me: "  # replaces default of "(Cmd) " in cmdloop
+    prompt = "\n\033[01;32m😃\033[37m\033[01;36m Me:\033[00m "
+    # gptprompt = "GPT: "
+    gptprompt = "\033[01;32m🤖\033[37m\033[01;35m GPT:\033[00m "
+    # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
 
     def __init__(self):
         Cmd.__init__(self)
         self.cmdloop(intro=f"Welcome to model {self.model}!\n")
-        # self.cmdloop(intro="Me:  ")
-        # console.print(self.myprompt, "\n")
 
     def cmdloop(self, intro):
         try:
@@ -73,8 +75,11 @@ class GptInterpreter(Cmd):
         except EOFError:
             self.do_exit()
 
+    def _emptyline(self):
+        print("Please enter a valid command.")
+
     def do_exit(self, line=None):
-        print("Goodbye...")
+        print(" Ok, goodbye...")
         readline.write_history_file(history_file)
         return True
 
@@ -87,6 +92,7 @@ class GptInterpreter(Cmd):
 
         # handle markdown and syntax highlighting and word/line wrapping;
         # technically could just use print() instead, just not as pretty:
+        console.print(" ")
         console.print(Markdown(self.gptprompt + output))
         console.print(" ")
 
