@@ -3,12 +3,8 @@ CLI tools to access the OpenAI LLM APIs, starting with a ChatGPT client.
 
 OpenAI serves a ChatGPT web client on its webpage, but I really prefer to keep
 certain things in the terminal, especially if I often copy/paste the results
-into a neighboring tmux pane.  There's another popular CLI based ChatGPT client
-out there called [Shell-GPT](https://pypi.org/project/shell-gpt) which has many
-nice aspects but I made my CLIs more narrowly focused, with output formatting
-that I prefer, and they're only about 100 lines in a single script so it's
-easy for me to follow exactly what they're doing.  Plus of course this way I
-learn about details in calling the API and prompt engineering for these models.
+into a neighboring tmux pane.  Plus scripts like this offer me the ability to
+experiment with more detailed prompt engineering and the API output.
 
 Be aware that any client outside of the one on OpenAI's website (which is free
 for ChatGPT) requires an [API key](https://platform.openai.com/account/api-keys)
@@ -20,31 +16,27 @@ as opposed to serving it out to zillions of other users to use in a web app.
 Like in my initial two days of fairly heavy usage I racked up a whole $0.20;
 after a few months of light-moderate usage since then, I'm now up to $0.50.
 
-Two scripts so far, which both provide very similar-looking CLI experience for
-ChatGPT:
+Two scripts here so far, which both provide very similar-looking CLI experience
+for ChatGPT:
 
 `pygpt`: Basic command-line ChatGPT-API client in Bash, implementing packages
 and tools like readline, syntax highlighting, prompt formatting, etc.  No command
 line arguments yet; currently the few options are set inside the script, but I'll
-add a click (or other) CLI soon that includes these.
+add a click (or other) CLI soon that includes these.  Contents auto-wrap to the
+width of the current terminal window.
 
 `bashgpt`: *(deprecated)*:
 Basic command-line ChatGPT-API client in Bash, implementing shell
 tools like readline, syntax highlighting, prompt formatting, etc.  No command
 line arguments; currently the few options are at the top of the bash script
-(ideally I'd move them to command line args).  Simply run the ./bashgpt script
-and then you're at the client prompt.  Contents auto-wrap to the width of the
-current terminal window.
-**Danger:** one of the main troubles in this bash-based client has trying to get
-the escape-character handling stable over all the looping/reuse of messages -
-escaping works in first few rounds but sometimes gets lost later which can
-break the app functioning; usually it's a round or two after code snippets that
-include characters like `*`, `\`, and `%`.  Note this danger includes a
-security/privacy concern in that sometimes that `*` can cause the inadvertent
-listing of files in your local directory (from wherever you run bashgpt) into
-the prompt sent to the ChatGPT API.  After fussing with this enough I've moved
-on to the python client, but leaving this bash one here for reference and in
-case some better approaches come to light.
+(ideally I'd move them to command line args).  Contents auto-wrap to the width
+of the current terminal window.
+**Danger:** a trouble in this bash client is stabilizing escape-character
+handling over looping/reuse of messages.  Escaping works in first few rounds but
+can get lost later which breaks the app; usually it's a round or two after code
+snippets that include characters like `*`, `\`, and `%` and can even cause
+file listing of your local directory to leak into the prompt sent to ChatGPT API.
+So I've moved on to the python client but leaving this bash one for reference.
 
 
 ------
