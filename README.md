@@ -19,7 +19,7 @@ after a few months of light-moderate usage since then, I'm now up to $0.50.
 Two scripts here so far, which both provide very similar-looking CLI experience
 for ChatGPT:
 
-`pygpt`: Basic command-line ChatGPT-API client in Bash, implementing packages
+`pygpt`: Basic command-line ChatGPT-API client in Python, implementing packages
 and tools like readline, syntax highlighting, prompt formatting, etc.  No command
 line arguments yet; currently the few options are set inside the script, but I'll
 add a click (or other) CLI soon that includes these.  Contents auto-wrap to the
