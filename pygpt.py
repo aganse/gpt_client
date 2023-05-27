@@ -11,7 +11,7 @@ And you must be in an environment with the following python packages:
 
 from cmd import Cmd
 import os
-import readline  # (apparently sometimes has quirks in windows?)
+import readline
 
 import openai
 from rich.console import Console
@@ -20,8 +20,11 @@ from rich.markdown import Markdown
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
-# set up the readline handling
-readline.parse_and_bind("bind '\\t' rl_complete")
+# set up the readline handling:
+if 'libedit' in readline.__doc__:
+    readline.parse_and_bind("bind ^I rl_complete")
+else:
+    readline.parse_and_bind("tab: complete")
 history_file = os.path.expanduser('~/.gpt_history')
 if os.path.exists(history_file):
     readline.read_history_file(history_file)
@@ -56,10 +59,10 @@ def generate_response(input):
 
 class GptInterpreter(Cmd):
     model = "gpt-3.5-turbo"  # set this in one spot with default & cmdline arg
-    # prompt = "Me: "  # replaces default of "(Cmd) " in cmdloop
-    prompt = "\n\033[01;32m😃\033[37m\033[01;36m Me:\033[00m "
-    # gptprompt = "GPT: "
-    gptprompt = "\033[01;32m🤖\033[37m\033[01;35m GPT:\033[00m "
+    prompt = "\033[1mMe:\033[0m "  # replaces default of "(Cmd) " in cmdloop
+    # prompt = "\n\033[01;32m😃\033[37m\033[01;36m Me:\033[00m "
+    gptprompt = "\033[1mGPT:\033[0m "
+    # gptprompt = "\033[01;32m🤖\033[37m\033[01;35m GPT:\033[00m "
     # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
 
     def __init__(self):
@@ -76,7 +79,7 @@ class GptInterpreter(Cmd):
             self.do_exit()
 
     def _emptyline(self):
-        print("Please enter a valid command.")
+        print("(empty line)")
 
     def do_exit(self, line=None):
         print(" Ok, goodbye...")
