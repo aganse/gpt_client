@@ -62,33 +62,33 @@ your shell environment, e.g. `export OPENAI_API_KEY=xyz123...`
 
     a. for Python-based `pygpt`:
      
-      i.   create and enter a python environment, e.g. `python3 -m venv ~/.venv; source ~/.venv/bin/activate`
-    
-      ii.  install two python package dependencies: `pip install openai rich`
-    
-      iii. run the app: `python /path/to/openai_llm_tools/pygpt.py`
-           The client's command line uses readline, so all the usual hot keys /
-           editing work including a command history via Ctrl-P and Ctrl-N.
-    
-      iv.  quit via: `quit` or `exit` or `q` or `ctrl-D` or `ctrl-C`.
+       *i.*   create and enter a python environment, e.g. `python3 -m venv ~/.venv; source ~/.venv/bin/activate`
+     
+       *ii.*  install two python package dependencies: `pip install openai rich`
+     
+       *iii.* run the app: `python /path/to/openai_llm_tools/pygpt.py`
+            The client's command line uses readline, so all the usual hot keys /
+            editing work including a command history via Ctrl-P and Ctrl-N.
+     
+       *iv.*  quit via: `quit` or `exit` or `q` or `ctrl-D` or `ctrl-C`.
      
     b. for Bash-based `bashgpt`:
      
-      i.   install `jq` and `rlwrap`, which are standard linux tools.
-           (e.g. `sudo apt install jq` and `sudo apt install rlwrap`, or
-           `brew install jq` and `brew install rlwrap`...)
-    
-      ii.  it's not required for bashgpt, but if you wish to have the syntax
-           highlighting and other formatting in running the client, you'll need to
-           install `rich-cli`, either via `brew install rich-cli` or
-           `pip install rich-cli`.  If you choose to skip installing this, set
-           `use_formatter=0` in the top of the bashgpt script.  (It's set to use it
-           by default `=1`).  It can always be changed later.
-    
-      iii. run the app: `/path/to/openai_llm_tools/bashgpt`
-           no arguments currently - and that'll start the client.  Ctrl-C to quit.
-           The client's command line uses readline, so all the usual hot keys /
-           editing work including a command history via Ctrl-P and Ctrl-N.
+       *i.*   install `jq` and `rlwrap`, which are standard linux tools.
+            (e.g. `sudo apt install jq` and `sudo apt install rlwrap`, or
+            `brew install jq` and `brew install rlwrap`...)
+     
+       *ii.*  it's not required for bashgpt, but if you wish to have the syntax
+            highlighting and other formatting in running the client, you'll need to
+            install `rich-cli`, either via `brew install rich-cli` or
+            `pip install rich-cli`.  If you choose to skip installing this, set
+            `use_formatter=0` in the top of the bashgpt script.  (It's set to use it
+            by default `=1`).  It can always be changed later.
+     
+       *iii.* run the app: `/path/to/openai_llm_tools/bashgpt`
+            no arguments currently - and that'll start the client.  Ctrl-C to quit.
+            The client's command line uses readline, so all the usual hot keys /
+            editing work including a command history via Ctrl-P and Ctrl-N.
 
 3. Know that OpenAI's GPT API is an immensely popular service right now and
 that regardless of which client you use (one of these CLI ones, their website
