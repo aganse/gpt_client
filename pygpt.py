@@ -49,20 +49,28 @@ def generate_response(input):
     # works at first but not after there's been a response from gpt...
     if input:
         messages.append({"role": "user", "content": input})
-        chat = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo", messages=messages
-        )
-        reply = chat.choices[0].message.content
-        messages.append({"role": "assistant", "content": reply})
+        try:
+            chat = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo", messages=messages
+            )
+            reply = chat.choices[0].message.content
+            messages.append({"role": "assistant", "content": reply})
+        except openai.OpenAIError as e:
+            errormsg = e.response["error"]["message"]
+            console.print(f"[bold red]OpenAI API Error:[/bold red] {errormsg}")
+            return ""
+        except Exception as e:
+            console.print(f"[bold red]An error occurred:[/bold red] {str(e)}")
+            return ""
     return reply
 
 
 class GptInterpreter(Cmd):
     model = "gpt-3.5-turbo"  # set this in one spot with default & cmdline arg
-    prompt = "\033[1mMe:\033[0m "  # replaces default of "(Cmd) " in cmdloop
-    # prompt = "\n\033[01;32m😃\033[37m\033[01;36m Me:\033[00m "
-    gptprompt = "\033[1mGPT:\033[0m "
-    # gptprompt = "\033[01;32m🤖\033[37m\033[01;35m GPT:\033[00m "
+    # prompt = "\033[1mMe:\033[0m "  # replaces default of "(Cmd) " in cmdloop
+    prompt = "\n\033[01;32m😃\033[37m\033[01;32m Me:\033[00m "
+    # gptprompt = "\033[1mGPT:\033[0m "
+    gptprompt = "\033[01;32m🤖\033[37m\033[01;36m GPT:\033[00m "
     # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
 
     def __init__(self):
@@ -78,8 +86,8 @@ class GptInterpreter(Cmd):
         except EOFError:
             self.do_exit()
 
-    def _emptyline(self):
-        print("(empty line)")
+    def emptyline(self):
+        pass
 
     def do_exit(self, line=None):
         print(" Ok, goodbye...")
@@ -89,8 +97,10 @@ class GptInterpreter(Cmd):
     do_EOF = do_exit  # enables ctrl-D to exit
 
     def default(self, line):
-        if line == 'exit' or line == 'quit' or line == 'q':
+        print("in default()")
+        if line == "exit" or line == "quit" or line == "q":
             return self.do_exit()
+
         output = generate_response(line)
 
         # handle markdown and syntax highlighting and word/line wrapping;
