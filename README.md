@@ -1,6 +1,10 @@
 # openai_llm_tools
 CLI tools to access the OpenAI LLM APIs, starting with a ChatGPT client.
 
+> *TL;DR:* get an OpenAPI key and put it in env var OPENAI_API_KEY, make a
+> python environment with openai and rich packages, run python pygpt.py.
+> Skip bashgpt; that's older and has some problems and just for reference.
+
 OpenAI serves a ChatGPT web client on its webpage, but I really prefer to keep
 certain things in the terminal, especially if I often copy/paste the results
 into a neighboring tmux pane.  Plus scripts like this offer me the ability to
