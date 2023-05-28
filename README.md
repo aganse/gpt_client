@@ -2,7 +2,7 @@
 CLI tools to access the OpenAI LLM APIs, starting with a ChatGPT client.
 
 > **TL;DR:** get an OpenAPI key and put it in env var OPENAI_API_KEY, make a
-> python env and pip install openai and rich packages, run python pygpt.py.
+> python env and pip install openai and rich packages, run **python pygpt.py**.
 > Bashgpt is older, has some problems, and is just for reference.
 
 OpenAI serves a ChatGPT web client on its webpage, but I really prefer to keep
