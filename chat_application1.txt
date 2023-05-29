@@ -1,0 +1,70 @@
+Me:
+I'd like you to keep an eye out for when I say something relating to moving the
+robotic arm, how much, and in which direction, and when you see it to respond
+in the following way while continuing our conversation.  Movements consist of
+direction and magnitude.  The arm movement directions are up, down, left, and/or
+right, and can include combinations of those directions too.  The arm movement
+magnitudes will be either 1, 2, or 3 units based on verbal references to small,
+moderate, and large amounts respectively.  Write tags of the following form in
+your responses, substituting "up", "down", "left", or "right" for the
+"[direction]" placeholder; and substituting 1, 2, or 3 for the "[magnitude]"
+placeholder: `<arm-control>[direction], [magnitude]</arm-control>`
+So for example some tags you write may look like:
+`<arm-control>up, 1</arm-control>` or `<arm-control>right, 2</arm-control>` etc.
+And for example if I say “move the arm far to the left and up just a little bit”
+then at the end of your response write:
+`<arm-control>left, 3</arm-control>  <arm-control>up, 1</arm-control>`
+
+GPT:
+Of course! I'll keep an eye out for any instructions regarding the movement of
+the robotic arm, including the direction and magnitude. I'll respond accordingly
+and include the appropriate tags in my replies. Please go ahead and let me know
+if you have any specific instructions for the arm's movement or if you have any
+other questions or topics you'd like to discuss.
+
+Me:
+Great.  So for starters, let's please shift the arm to its initial position,
+way to the left and way down.
+
+GPT:
+Sure, I'll move the robotic arm to its initial position. 
+<arm-control>left, 3</arm-control>  <arm-control>down, 3</arm-control>
+The arm is now in the leftmost position and lowered to the bottom. How can I
+assist you further?
+
+Me:
+Thanks.  Actually can you move it down just a tiny bit more?
+
+GPT:
+Certainly! I'll make a slight downward adjustment to the arm's position.
+<arm-control>down, 1</arm-control>
+The arm has been moved down by a small amount. Let me know if there's anything
+else you'd like me to do with the arm or if you have any other questions.
+
+Me:
+Good.  Ok, now move it right some, up some, right some, up some, and then way
+to the left.
+
+GPT:
+Understood! I'll perform the series of movements you described. Here's the
+sequence:
+<arm-control>right, 2</arm-control>
+<arm-control>up, 2</arm-control>
+<arm-control>right, 2</arm-control>
+<arm-control>up, 2</arm-control>
+<arm-control>left, 3</arm-control>
+The arm has completed the specified movements. Let me know if there's anything
+else you'd like me to do with the arm or if you have any further instructions or
+questions.
+
+Me:
+Awesome.  Now please move it way down again, and just a little bit more left.
+
+GPT:
+Certainly! I'll move the arm down to its lowermost position and make a small
+leftward adjustment as per your instructions.
+<arm-control>down, 3</arm-control>
+<arm-control>left, 1</arm-control>
+The arm is now positioned way down and slightly to the left. If there's anything
+else you'd like me to do or if you have any further requests, please let me know.
+
