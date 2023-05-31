@@ -11,8 +11,11 @@ And you must be in an environment with the following python packages:
 
 from cmd import Cmd
 import os
+import re
 import readline
+import urllib
 
+from bs4 import BeautifulSoup
 import openai
 from rich.console import Console
 from rich.markdown import Markdown
@@ -30,7 +33,7 @@ if os.path.exists(history_file):
     readline.read_history_file(history_file)
 console = Console()
 
-# set basic behavior of the ai agent
+# set basic behavior of the ai agent here
 messages = [
     {"role": "system", "content": "The following is a conversation with "
      "an AI assistant. The assistant is helpful, creative, clever, friendly. "
@@ -43,18 +46,20 @@ messages = [
 ]
 
 
-def generate_response(input):
-    # hmm "if input:" doesn't seem to catch empty input as expected...?
-    # might have to do with escape chars in prompt...?
-    # works at first but not after there's been a response from gpt...
+def generate_response(input, supplemental):
     if input:
         messages.append({"role": "user", "content": input})
+        if supplemental is not None:
+            messages.append({"role": "user", "content": supplemental})
+        metadata = {}
         try:
             chat = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo", messages=messages
             )
             reply = chat.choices[0].message.content
             messages.append({"role": "assistant", "content": reply})
+            metadata["prompt_tokens"] = chat.usage.prompt_tokens
+            metadata["completion_tokens"] = chat.usage.completion_tokens
         except openai.OpenAIError as e:
             errormsg = e.response["error"]["message"]
             console.print(f"[bold red]OpenAI API Error:[/bold red] {errormsg}")
@@ -62,7 +67,7 @@ def generate_response(input):
         except Exception as e:
             console.print(f"[bold red]An error occurred:[/bold red] {str(e)}")
             return ""
-    return reply
+    return reply, metadata
 
 
 class GptInterpreter(Cmd):
@@ -75,7 +80,9 @@ class GptInterpreter(Cmd):
 
     def __init__(self):
         Cmd.__init__(self)
-        self.cmdloop(intro=f"Welcome to model {self.model}!\n")
+        self.cmdloop(intro=f"Welcome to model {self.model}!\nNote you can "
+                     "enter page contents of a URL by putting the URL in "
+                     "double chevrons like this: <<URL>>\n")
 
     def cmdloop(self, intro):
         try:
@@ -97,17 +104,57 @@ class GptInterpreter(Cmd):
     do_EOF = do_exit  # enables ctrl-D to exit
 
     def default(self, line):
-        print("in default()")
         if line == "exit" or line == "quit" or line == "q":
             return self.do_exit()
 
-        output = generate_response(line)
+        # check for possible URL in user-submitted text
+        webpagetext = None
+        skip_input = False
+        url_search = re.search("<<(.*)>>", line, re.IGNORECASE)
+        if url_search:
+            url = url_search.group(1)
+            try:
+                maxchar = 15000
+                html = urllib.request.urlopen(url).read()
+                webpagetext = BeautifulSoup(html, "html.parser").get_text()
+                webpagetext = webpagetext.replace("\n", " ")
+                orig_length_webpagetext = len(webpagetext)
+                if orig_length_webpagetext > maxchar:
+                    user_input = input("Warning: length of webpagetext string "
+                        f"= {len(webpagetext)} which will rapidly use up your "
+                        f"tokens; also must be truncated to first {maxchar} "
+                        "chars.  Continue?  (yN): ")
+                    if user_input.lower() != "y" and user_input.lower() != "yes":
+                        skip_input = True
+                    else:
+                        webpagetext = ("GPT please note that due to length, "
+                            f"webpage truncated to first {maxchar} characters,"
+                            f"about {maxchar/orig_length_webpagetext*100.0}%, "
+                            "which may affect your interpretation of it:\n"
+                            "------------------\n") + webpagetext
+                        webpagetext = webpagetext[:maxchar]
+            except urllib.error.HTTPError as e:
+                print(f"Sorry, HTTP error: {e.code} in trying to access URL..")
+                line = re.sub("<<.*>>", f"<<HTTP error {e.code}>>", line)
+                skip_input = True
+            except urllib.error.URLError as e:
+                print(f"Sorry, URL error: {e.reason} in trying to access URL.")
+                line = re.sub("<<.*>>", f"<<URL error {e}>>", line)
+                skip_input = True
 
-        # handle markdown and syntax highlighting and word/line wrapping;
-        # technically could just use print() instead, just not as pretty:
-        console.print(" ")
-        console.print(Markdown(self.gptprompt + output))
-        console.print(" ")
+        if not skip_input:
+            reply, metadata = generate_response(line, webpagetext)
+
+            # handle markdown and syntax highlighting and word/line wrapping;
+            # technically could just use print() instead, just not as pretty:
+            console.print(f"[grey78][{metadata['prompt_tokens']} prompt-tokens; "
+                          "includes resubmission of all history this session plus "
+                          "page contents of any urls given...][/grey78]")
+            console.print(" ")
+            console.print(Markdown(self.gptprompt + reply))
+            console.print(f"[grey78][{metadata['completion_tokens']} "
+                          "completion-tokens just for this response...][/grey78]")
+            console.print(" ")
 
 
 def main():

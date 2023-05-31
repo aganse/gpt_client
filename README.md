@@ -2,8 +2,9 @@
 CLI tools to access the OpenAI LLM APIs, starting with a ChatGPT client.
 
 > **TL;DR:** get an OpenAPI key and put it in env var OPENAI_API_KEY, make a
-> python env and pip install openai and rich packages, run **python pygpt.py**.
-> Bashgpt is older, has some problems, and is just for reference.
+> python env and pip install the openai, rich, & beautifulsoup4 packages, then
+> run **python pygpt.py**.  Bashgpt is older, has some problems, and is just
+> for reference.
 
 OpenAI serves a ChatGPT web client on its webpage, but I really prefer to keep
 certain things in the terminal, especially if I often copy/paste the results
@@ -60,7 +61,8 @@ your shell environment, e.g. `export OPENAI_API_KEY=xyz123...`
      
         1. create and enter a python environment, e.g. `python3 -m venv ~/.venv; source ~/.venv/bin/activate`
     
-        2. install two python package dependencies: `pip install openai rich`
+        2. install two python package dependencies:
+           `pip install openai rich beautifulsoup4`
     
         3. run the app: `python /path/to/openai_llm_tools/pygpt.py`
            The client's command line uses readline, so all the usual hot keys /
