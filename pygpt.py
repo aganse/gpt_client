@@ -72,10 +72,14 @@ def generate_response(input, supplemental):
 
 class GptInterpreter(Cmd):
     model = "gpt-3.5-turbo"  # set this in one spot with default & cmdline arg
-    # prompt = "\033[1mMe:\033[0m "  # replaces default of "(Cmd) " in cmdloop
-    prompt = "\n\033[01;32m😃\033[37m\033[01;32m Me:\033[00m "
-    # gptprompt = "\033[1mGPT:\033[0m "
-    gptprompt = "\033[01;32m🤖\033[37m\033[01;36m GPT:\033[00m "
+    # prompt = "Me: "
+    # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
+    prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
+    # prompt = "\n\033[01;32m😃\033[37m\033[01;32m Me:\033[00m "
+    # gptprompt = "GPT: "
+    # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
+    gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
+    # gptprompt = "\033[01;32m🤖\033[37m\033[01;36m GPT:\033[00m "
     # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
 
     def __init__(self):
@@ -141,6 +145,12 @@ class GptInterpreter(Cmd):
                 print(f"Sorry, URL error: {e.reason} in trying to access URL.")
                 line = re.sub("<<.*>>", f"<<URL error {e}>>", line)
                 skip_input = True
+            # let's also catch this error:
+            # openai.error.RateLimitError: That model is currently overloaded
+            # with other requests. You can retry your request, or contact us
+            # through our help center at help.openai.com if the error persists.
+            # (Please include the request ID 73ac0a3985379d57d5992b960d7ec24f
+            # in your message.)
 
         if not skip_input:
             reply, metadata = generate_response(line, webpagetext)
