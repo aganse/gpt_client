@@ -22,6 +22,7 @@ from rich.markdown import Markdown
 
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
+code_theme = "default"  # "default" (for light), "monokai" (for dark)
 
 # set up the readline handling:
 if 'libedit' in readline.__doc__:
@@ -40,13 +41,14 @@ messages = [
      "Its answers are polite and friendly but brief, only rarely exceeding "
      "a single paragraph when really necessary to explain a point. "
      "The assistant labels all markdown code snippets with the code language. "
-     "Mathematical answers and expressions written by the assistant should "
-     "are always formatted in unicode characters rather than latex. "
-     "The assistant uses occasional emojis in writing to show enthusiasm."}
+     "Mathematical answers and expressions written by the assistant are "
+     "always formatted in unicode characters rather than latex, using full "
+     "mathematical notation rather than programming notation. "
+     "The assistant only very occasionally uses emojis to show enthusiasm."}
 ]
 
 
-def generate_response(input, supplemental):
+def generate_response(input, supplemental, model):
     if input:
         messages.append({"role": "user", "content": input})
         if supplemental is not None:
@@ -54,7 +56,7 @@ def generate_response(input, supplemental):
         metadata = {}
         try:
             chat = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo", messages=messages
+                model=model, messages=messages
             )
             reply = chat.choices[0].message.content
             messages.append({"role": "assistant", "content": reply})
@@ -71,7 +73,8 @@ def generate_response(input, supplemental):
 
 
 class GptInterpreter(Cmd):
-    model = "gpt-3.5-turbo"  # set this in one spot with default & cmdline arg
+    model = "gpt-4"  # set this in one spot with default & cmdline arg
+    # model = "gpt-3.5-turbo"  # set this in one spot with default & cmdline arg
     # prompt = "Me: "
     # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
     prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
@@ -153,7 +156,7 @@ class GptInterpreter(Cmd):
             # in your message.)
 
         if not skip_input:
-            reply, metadata = generate_response(line, webpagetext)
+            reply, metadata = generate_response(line, webpagetext, self.model)
 
             # handle markdown and syntax highlighting and word/line wrapping;
             # technically could just use print() instead, just not as pretty:
@@ -161,7 +164,7 @@ class GptInterpreter(Cmd):
                           "includes resubmission of all history this session plus "
                           "page contents of any urls given...][/grey78]")
             console.print(" ")
-            console.print(Markdown(self.gptprompt + reply))
+            console.print(Markdown(self.gptprompt + reply, code_theme=code_theme))
             console.print(f"[grey78][{metadata['completion_tokens']} "
                           "completion-tokens just for this response...][/grey78]")
             console.print(" ")
