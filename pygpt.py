@@ -9,6 +9,10 @@ And you must be in an environment with the following python packages:
   * darkdetect (for putting code syntax or webpage into light/dark mode)
   * beautifulsoup4 (for reading contents of urls)
 
+python3 -m venv .venv
+source .venv/bin/activate
+pip install openai rich darkdetect beautifulsoup4
+
 """
 
 from cmd import Cmd
@@ -20,7 +24,7 @@ import urllib
 
 from bs4 import BeautifulSoup
 import darkdetect
-import gradio as gr
+# import gradio as gr
 import openai
 from rich.console import Console
 from rich.markdown import Markdown
@@ -121,16 +125,15 @@ def generate_response(input,
                       temperature=None,
                       top_p=None):
     """Check for input plugins (like webpage urls), retrieve them, submit input
-    to GPT model and return reply."""
+    to GPT model and return reply.  Args set to None use default value."""
 
-    # Set GPT submission options
+    # Set messages default here instead of inline to handle None='default'
+    if model is None:
+        model = "gpt-4"  # "gpt-3.5-turbo"
     if temperature is None:
         temperature = 1
     if top_p is None:
         top_p = 1
-    if model is None:
-        model = "gpt-4"  # set this in one spot with default & cmdline arg
-        # model = "gpt-3.5-turbo"
     if messages is None:
         messages = [{
             "role": "system", "content": "The following is a conversation with"
@@ -159,6 +162,12 @@ def generate_response(input,
             messages.append({"role": "user", "content": input})
             if webpagetext is not None:
                 messages.append({"role": "user", "content": webpagetext})
+
+        # print("Debug generate_response :")
+        # print(f"messages: {messages}")
+        # print(f"model: {model}")
+        # print(f"temperature: {temperature}")
+        # print(f"top_p: {top_p}")
 
         reply, metadata = submit_to_gpt(messages,
                                         model,
@@ -212,23 +221,25 @@ class CmdLineInterpreter(Cmd):
 
         # If constructor args specified any of these variables, update defaults
         if prompt is not None:
-            self.prompt = prompt,
+            self.prompt = prompt
         if gptprompt is not None:
-            self.gptprompt = gptprompt,
+            self.gptprompt = gptprompt
         if code_theme is not None:
-            self.code_theme = code_theme,
+            self.code_theme = code_theme
         if intro is not None:
-            self.intro = intro,
+            self.intro = intro
         if messages is not None:
-            self.messages = messages,
+            self.messages = messages
         if model is not None:
-            self.model = model,
+            self.model = model
         if temperature is not None:
-            self.temperature = temperature,
+            self.temperature = temperature
         if top_p is not None:
-            self.top_p = top_p,
+            self.top_p = top_p
         if allow_injections is not None:
-            self.allow_injections = allow_injections,
+            self.allow_injections = allow_injections
+        if history_file is not None:
+            self.history_file = history_file
 
         # Initialize the greeting/intro message on startup
         Cmd.__init__(self)
@@ -267,6 +278,9 @@ class CmdLineInterpreter(Cmd):
     def do_exit(self, line=None):
         print(" Ok, goodbye...")
         readline.write_history_file(self.history_file)
+        # readline.append_history_file(readline.get_current_history_length(),
+        #                              self.history_file)
+
         return True
 
     do_EOF = do_exit  # enables ctrl-D to exit
@@ -275,9 +289,15 @@ class CmdLineInterpreter(Cmd):
         if line == "exit" or line == "quit" or line == "q":
             return self.do_exit()
 
+        # print("Debug CmdLineInterpreter check:")
+        # print(f"messages: {self.messages}")
+        # print(f"model: {self.model}")
+        # print(f"temperature: {self.temperature}")
+        # print(f"top_p: {self.top_p}")
+
         reply, metadata = generate_response(line,
-                                            self.model,
                                             self.messages,
+                                            self.model,
                                             self.temperature,
                                             self.top_p)
 
@@ -298,18 +318,18 @@ class CmdLineInterpreter(Cmd):
         self.console.print(" ")
 
 
-def runChatWebApp():
-    """Start a gradio-based webapp for the chat interface"""
+# def runChatWebApp():
+#     """Start a gradio-based webapp for the chat interface"""
 
-    def chat(user_input):
-        return "You said: " + user_input
+#     def chat(user_input):
+#         return "You said: " + user_input
 
-    iface = gr.Interface(chat, "text", "text", title="My Chat App")
-    iface.launch()
+#     iface = gr.Interface(chat, "text", "text", title="My Chat App")
+#     iface.launch()
 
 
 if __name__ == '__main__':
 
-    CmdLineInterpreter()
+    CmdLineInterpreter(temperature=0.2, top_p=0.1)
 
     # runChatWebApp()  # for gradio
