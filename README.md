@@ -1,4 +1,4 @@
-# PyGPT: A lightweight, python-based, OpenAI GPT client.
+# A lightweight, python-based, OpenAI GPT client.
 
 Compared to the ChatGPT website, this tool is more configurable, is only a few
 hundred lines of code so is openly easy to understand/follow/modify, and it
@@ -10,11 +10,11 @@ This app can be run either as a terminal/readline based ChatGPT CLI app or as a
 browser-based web-app:
 
 ------
-![screenshot](pygpt_cli_screenshot.png "PyGPT CLI Screenshot")
+![screenshot](cli_screenshot.png "Gpt_client CLI Screenshot")
 
 ------
 
-![screenshot](pygpt_webapp_screenshot.png "PyGPT WebApp Screenshot")
+![screenshot](webapp_screenshot.png "Gpt_client WebApp Screenshot")
 ------
 
 
@@ -52,8 +52,8 @@ This app can be run either as a terminal/readline based ChatGPT CLI app or as a
 browser-based web-app:
 
 ```bash
-Usage:  python3 pygpt.py           # for CLI
-   or:  python3 pygpt.py --gradio  # for web-app
+Usage:  python3 gpt_client.py           # for CLI
+   or:  python3 gpt_client.py --gradio  # for web-app
 ```
 
 You must run this in an environment with the following python packages:
@@ -68,7 +68,7 @@ You must run this in an environment with the following python packages:
   source .venv/bin/activate
   pip install openai rich darkdetect beautifulsoup4 gradio
   export OPENAI_API_KEY=xyz123xyz123...
-  python pygpt.py
+  python gpt_client.py
 ```
 
 The command line (CLI) client uses readline, so all the usual hot keys /

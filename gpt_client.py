@@ -1,4 +1,4 @@
-""" PyGPT - A lightweight, python-based, open-source, OpenAPI GPT client.
+""" Gpt_client - A lightweight, python-based, open-source, OpenAPI GPT client.
 
 Compared to the ChatGPT website this is more configurable, is only a few
 hundred lines of open-source code so is easy to understand/follow/modify,
@@ -10,8 +10,8 @@ is literally pennies per month.)
 Can be run either as a terminal/readline based ChatGPT CLI app or as a
 browser-based web-app:
 
-Usage:  python3 pygpt.py           # for CLI
-   or:  python3 pygpt.py --gradio  # for web-app
+Usage:  python3 gpt_client.py           # for CLI
+   or:  python3 gpt_client.py --gradio  # for web-app
 
 Note you must have your OPENAI_API_KEY env var set.
 
@@ -440,10 +440,10 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1 and sys.argv[1] == "--gradio":
         # Run the web-browser-based web app:
-        print("Starting local web-app version of pygpt:")
+        print("Starting local web-app version of gpt_client:")
         gr.ChatInterface(
             gradio_response,
-            title="PyGPT Chatbot",
+            title="GPTclient Chatbot",
             analytics_enabled=False
         ).launch()
 
