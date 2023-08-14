@@ -8,10 +8,11 @@ And you must be in an environment with the following python packages:
   * rich (for the markdown/syntax-highlighting formatting)
   * darkdetect (for putting code syntax or webpage into light/dark mode)
   * beautifulsoup4 (for reading contents of urls)
+  * gradio
 
 python3 -m venv .venv
 source .venv/bin/activate
-pip install openai rich darkdetect beautifulsoup4
+pip install openai rich darkdetect beautifulsoup4 gradio
 
 """
 
@@ -19,12 +20,12 @@ from cmd import Cmd
 import os
 import re
 import readline
-# import gnureadline as readline  # for macos
+import sys
 import urllib
 
 from bs4 import BeautifulSoup
 import darkdetect
-# import gradio as gr
+import gradio as gr
 import openai
 from rich.console import Console
 from rich.markdown import Markdown
@@ -161,7 +162,9 @@ def generate_response(input,
         if input:
             messages.append({"role": "user", "content": input})
             if webpagetext is not None:
-                messages.append({"role": "user", "content": webpagetext})
+                messages.append({
+                    "role": "user",
+                    "content": webpagetext})
 
         # print("Debug generate_response :")
         # print(f"messages: {messages}")
@@ -182,13 +185,13 @@ class CmdLineInterpreter(Cmd):
 
     # Set default CmdLinInterpreter interface options:
     # prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
-    # prompt = "Me: "
+    prompt = "Me: "
     # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
-    prompt = "\n\033[01;32m😃\033[37m\033[01;32m Me:\033[00m "
+    # prompt = "\n\033[01;32m😃\033[37m\033[01;32m Me:\033[00m "
     # gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
-    # gptprompt = "GPT: "
+    gptprompt = "GPT: "
     # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
-    gptprompt = "\033[01;32m🤖\033[37m\033[01;36m GPT:\033[00m "
+    # gptprompt = "\033[01;32m🤖\033[37m\033[01;36m GPT:\033[00m "
     # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
     intro = ""
     allow_injections = True
@@ -318,18 +321,32 @@ class CmdLineInterpreter(Cmd):
         self.console.print(" ")
 
 
-# def runChatWebApp():
-#     """Start a gradio-based webapp for the chat interface"""
+def gradio_response(input, history):
+    """Format entries for our usual generate_response() function, to match
+    the form expected by gradio."""
+    model = "gpt-4"
+    temperature = 0.2
+    top_p = 0.1
 
-#     def chat(user_input):
-#         return "You said: " + user_input
-
-#     iface = gr.Interface(chat, "text", "text", title="My Chat App")
-#     iface.launch()
+    messages = [{"role": "user" if i % 2 == 0 else "assistant",
+                 "content": content}
+                for sublist in history for i, content in enumerate(sublist)]
+    reply, metadata = generate_response(input,
+                                        messages,
+                                        model,
+                                        temperature,
+                                        top_p)
+    return reply
 
 
 if __name__ == '__main__':
 
-    CmdLineInterpreter(temperature=0.2, top_p=0.1)
-
-    # runChatWebApp()  # for gradio
+    if len(sys.argv) > 1 and sys.argv[1] == "--gradio":
+        print("Starting local web-app version of pygpt:")
+        gr.ChatInterface(
+            gradio_response,
+            title="PyGPT Chatbot",
+            analytics_enabled=False
+        ).launch()
+    else:
+        CmdLineInterpreter(temperature=0.2, top_p=0.1)
