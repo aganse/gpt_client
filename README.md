@@ -1,4 +1,4 @@
-# PyGPT - A lightweight, python-based, open-source, OpenAI GPT client.
+# PyGPT: A lightweight, python-based, OpenAI GPT client.
 
 Compared to the ChatGPT website, this tool is more configurable, is only a few
 hundred lines of code so is openly easy to understand/follow/modify, and it
@@ -11,13 +11,16 @@ browser-based web-app:
 
 ------
 ![screenshot](pygpt_cli_screenshot.png "PyGPT CLI Screenshot")
+
+------
+
 ![screenshot](pygpt_webapp_screenshot.png "PyGPT WebApp Screenshot")
 ------
 
 
 ## Usage
 
-1. OpenAI account/key setup:
+### OpenAI account/key setup:
 
 Getting an [API key](https://platform.openai.com/account/api-keys) (requires
 creating an OpenAI account if you don't have one already) and putting that key
@@ -43,7 +46,7 @@ had come up because they prioritized folks who'd paid for at least one month of
 ChatGPT-Plus.  I guess it's no guarantee (they hadn't said this on the waitlist
 website) but maybe info that other potential users here would want to know.
 
-2. Installing dependencies and run the app:
+### Installing dependencies and run the app:
 
 This app can be run either as a terminal/readline based ChatGPT CLI app or as a
 browser-based web-app:
@@ -101,6 +104,8 @@ Thoughts for values of temperature and top_p for different use-cases:
 
   Arbitrary example table below comes from a forum entry at:
   https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api-a-few-tips-and-tricks-on-controlling-the-creativity-deterministic-output-of-prompt-responses/172683
+  Take these contents with a grain of salt - eg note OpenAI ref docs suggest
+  only changing Temp and Top_p independently - but experiment and see what works!
 
   Use Case                 | Temp |  Top_p |  Description
   ------------------------ | ---- |  ----- |  ------------------------------------
