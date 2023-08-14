@@ -1,18 +1,30 @@
-""" Little python-based terminal/readline based ChatGPT CLI app.
+""" PyGPT - A lightweight, python-based, open-source, OpenAPI GPT client.
 
-Start via:  python3 pygpt.py
+Compared to the ChatGPT website this is more configurable, is only a few
+hundred lines of open-source code so is easy to understand/follow/modify,
+allows GPT-4 and plug-in options like inserting weblinks without paying the
+hefty monthly fee for ChatGPT-Plus.  (However, note it does involve paying fees
+for API calls - but for personal use rather than public internet app use, this
+is literally pennies per month.)
+
+Can be run either as a terminal/readline based ChatGPT CLI app or as a
+browser-based web-app:
+
+Usage:  python3 pygpt.py           # for CLI
+   or:  python3 pygpt.py --gradio  # for web-app
 
 Note you must have your OPENAI_API_KEY env var set.
-And you must be in an environment with the following python packages:
-  * openai (for the open api)
-  * rich (for the markdown/syntax-highlighting formatting)
-  * darkdetect (for putting code syntax or webpage into light/dark mode)
-  * beautifulsoup4 (for reading contents of urls)
-  * gradio
 
-python3 -m venv .venv
-source .venv/bin/activate
-pip install openai rich darkdetect beautifulsoup4 gradio
+And you must be in an environment with the following python packages:
+  * openai (for the core Open API calls)
+  * beautifulsoup4 (for reading contents of urls)
+  * rich (for the markdown/syntax-highlighting formatting in CLI)
+  * darkdetect (for putting code syntax or webpage into light/dark mode in CLI)
+  * gradio (for the quickie webapp interface)
+
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install openai rich darkdetect beautifulsoup4 gradio
 
 """
 
@@ -35,6 +47,19 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
 def submit_to_gpt(messages, model, temperature, top_p):
+    """Send formatted input contents/parameters to OpenAPI API completion call.
+
+    Parameters:
+        messages         list     chat history of user & agent messages
+                                  in OpenAPI's list-of-dicts format like
+                                  [{"role":___, "content":___}, {...}, ...]
+        model            string   OpenAPI's "gpt-4", "gpt-3.5-turbo", etc.
+        temperature      float    consistency/creativity parameter 0.0-1.0
+        top_p            float    sampling parameter 0.0-1.0
+    Returns:
+        reply            string   latest chatbot reply message
+        metadata         dict     dict of non-msg reply info like token counts
+    """
 
     metadata = {}
     try:
@@ -68,24 +93,37 @@ def submit_to_gpt(messages, model, temperature, top_p):
     return reply, metadata
 
 
-def get_url_contents(url_search):
+def get_url_contents(url):
+    """Scrape webpage text-only contents from given input URL.
+
+    Parameters:
+        url          string    web address to scrape
+    Returns:
+        webpagetext  string    webpage text-only contents
+        skip_input   boolean   success flag to prevent OpenAPI call if problem
+    """
 
     skip_input = False
-    url = url_search.group(1)
+
     try:
-        maxchar = 15000
+        # Still experimenting with some of the html-passing code - clean later:
         # values = {"name": "Michael Foord",
         #           "location": "Northampton",
         #           "language": "Python"}
-        headers = {"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0"}
-        # resp = requests.get("https://www.embassy-worldwide.com", headers=headers)
-
+        # resp = requests.get("https://www.embassy-worldwide.com",
+        #                     headers=headers)
         # data = urllib.parse.urlencode(values)
         # data = data.encode("ascii")
-        req = urllib.request.Request(url, headers=headers)
         # req = urllib.request.Request(url, data, headers)
-        html = urllib.request.urlopen(req).read()
         # html = urllib.request.urlopen(url).read()
+
+        maxchar = 15000  # depends on token limit - should make this dynamic
+        headers = {  # trying to make sites accept more of these get requests
+            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) "
+            "Gecko/20100101 Firefox/78.0"
+        }
+        req = urllib.request.Request(url, headers=headers)
+        html = urllib.request.urlopen(req).read()
         webpagetext = BeautifulSoup(html, "html.parser").get_text()
         webpagetext = webpagetext.replace("\n", " ")
         orig_length_webpagetext = len(webpagetext)
@@ -107,11 +145,9 @@ def get_url_contents(url_search):
                 webpagetext = webpagetext[:maxchar]
     except urllib.error.HTTPError as e:
         print(f"Sorry, HTTP error: {e.code} in trying to access URL..")
-        # line = re.sub("<<.*>>", f"<<HTTP error {e.code}>>", line)
         skip_input = True
     except urllib.error.URLError as e:
         print(f"Sorry, URL error: {e.reason} in trying to access URL.")
-        # line = re.sub("<<.*>>", f"<<URL error {e}>>", line)
         skip_input = True
     except Exception as e:
         print(f"Unexpected {e=}, {type(e)=}")
@@ -126,11 +162,24 @@ def generate_response(input,
                       temperature=None,
                       top_p=None):
     """Check for input plugins (like webpage urls), retrieve them, submit input
-    to GPT model and return reply.  Args set to None use default value."""
+    to GPT model and return reply.  Args set to None use default value.
+
+    Parameters:
+        input            string   latest user input message
+        messages         list     chat history of user & agent messages
+                                  in OpenAPI's list-of-dicts format like
+                                  [{"role":___, "content":___}, {...}, ...]
+        model            string   OpenAPI's "gpt-4", "gpt-3.5-turbo", etc.
+        temperature      float    consistency/creativity parameter 0.0-1.0
+        top_p            float    sampling parameter 0.0-1.0
+    Returns:
+        reply            string   latest chatbot reply message
+        metadata         dict     dict of non-msg reply info like token counts
+    """
 
     # Set messages default here instead of inline to handle None='default'
     if model is None:
-        model = "gpt-4"  # "gpt-3.5-turbo"
+        model = "gpt-4"
     if temperature is None:
         temperature = 1
     if top_p is None:
@@ -149,13 +198,13 @@ def generate_response(input,
             "show enthusiasm."
         }]
 
-    # check for possible URL in user-submitted text
+    # Check for possible URL in user-submitted text
     webpagetext = None
     skip_input = False
-    url_search = re.search("<<(.*)>>", input, re.IGNORECASE)
+    url = re.search("<<(.*)>>", input, re.IGNORECASE).group(1)
 
-    if url_search:
-        webpagetext, skip_input = get_url_contents(url_search)
+    if url:
+        webpagetext, skip_input = get_url_contents(url)
 
     if not skip_input:
 
@@ -166,6 +215,7 @@ def generate_response(input,
                     "role": "user",
                     "content": webpagetext})
 
+        # Still debugging readline & weblink details - clean this up later:
         # print("Debug generate_response :")
         # print(f"messages: {messages}")
         # print(f"model: {model}")
@@ -181,15 +231,18 @@ def generate_response(input,
 
 
 class CmdLineInterpreter(Cmd):
-    """REPL command line interpreter based on built-in python Cmd package."""
+    """OpenAPI command line interpreter based on built-in python Cmd package.
+    Various configuration parameters are described in constructor doc-string.
+    """
 
     # Set default CmdLinInterpreter interface options:
-    # prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
+    # (note still working out issues with escape chars used in readline...)
     prompt = "Me: "
+    # prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
     # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
     # prompt = "\n\033[01;32m😃\033[37m\033[01;32m Me:\033[00m "
-    # gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
     gptprompt = "GPT: "
+    # gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
     # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
     # gptprompt = "\033[01;32m🤖\033[37m\033[01;36m GPT:\033[00m "
     # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
@@ -214,13 +267,28 @@ class CmdLineInterpreter(Cmd):
                  gptprompt=None,
                  code_theme=None,
                  intro=None,
+                 history_file=None,
                  messages=None,
                  model=None,
                  temperature=None,
                  top_p=None,
                  allow_injections=None,
-                 history_file=None,
                  ):
+        """
+        Parameters:
+            prompt           string   user input prompt string in CLI
+            gptprompt        string   chatbot response prompt string in CLI
+            code_theme       string   syntax highlight theme in Rich in CLI
+            intro            string   opening/greeting lines in CLI
+            history_file     string   CLI history path (default ~/.gpt_history)
+            messages         list     chat history of user & agent messages
+                                      in OpenAPI's list-of-dicts format like
+                                      [{"role":___, "content":___}, {...}, ...]
+            model            string   OpenAPI's "gpt-4", "gpt-3.5-turbo", etc.
+            temperature      float    consistency/creativity parameter 0.0-1.0
+            top_p            float    sampling parameter 0.0-1.0
+            allow_injections boolean  allow insertion of weblinks
+        """
 
         # If constructor args specified any of these variables, update defaults
         if prompt is not None:
@@ -281,6 +349,7 @@ class CmdLineInterpreter(Cmd):
     def do_exit(self, line=None):
         print(" Ok, goodbye...")
         readline.write_history_file(self.history_file)
+        # Still experimenting with readline variations - clean this up later:
         # readline.append_history_file(readline.get_current_history_length(),
         #                              self.history_file)
 
@@ -292,6 +361,7 @@ class CmdLineInterpreter(Cmd):
         if line == "exit" or line == "quit" or line == "q":
             return self.do_exit()
 
+        # Still debugging readline & weblink details - clean this up later:
         # print("Debug CmdLineInterpreter check:")
         # print(f"messages: {self.messages}")
         # print(f"model: {self.model}")
@@ -304,8 +374,10 @@ class CmdLineInterpreter(Cmd):
                                             self.temperature,
                                             self.top_p)
 
-        # handle markdown and syntax highlighting and word/line wrapping;
-        # technically could just use print() instead, just not as pretty:
+        # Handle markdown and syntax highlighting and word/line wrapping;
+        # technically could just use print() instead, just not as pretty.
+        # Should move making the tokens-status lines into generate_response()
+        # and only do the formatting/output here:
         self.console.print(
             f"[grey78][{metadata['prompt_tokens']} prompt-tokens; "
             "includes resubmission of all history this session plus "
@@ -322,8 +394,20 @@ class CmdLineInterpreter(Cmd):
 
 
 def gradio_response(input, history):
-    """Format entries for our usual generate_response() function, to match
-    the form expected by gradio."""
+    """Format entries for our generate_response() function, to match the form
+    expected by gradio.  For use with gradio's ChatInterface class. See
+    https://www.gradio.app/docs/chatinterface
+
+    Parameters:
+        input    string    latest user input message
+        history  list      gradio-formatted history of user & agent messages:
+                           a string input message and list of two-element lists
+                           of the form [[user_msg_str, bot_msg_str], ...]
+                           representing the chat history.
+    Returns:
+        reply    string    latest chatbot reply message
+    """
+
     model = "gpt-4"
     temperature = 0.2
     top_p = 0.1
@@ -340,13 +424,29 @@ def gradio_response(input, history):
 
 
 if __name__ == '__main__':
+    """Call the app from the command line to start either CLI or web-app.
+    Next steps will implement click to pass constructor params as cmdline args:
+      prompt           - CLI only
+      gptprompt        - CLI only
+      code_theme       - CLI only
+      intro            - CLI only
+      history_file     - CLI only
+      messages
+      model
+      temperature
+      top_p
+      allow_injections
+    """
 
     if len(sys.argv) > 1 and sys.argv[1] == "--gradio":
+        # Run the web-browser-based web app:
         print("Starting local web-app version of pygpt:")
         gr.ChatInterface(
             gradio_response,
             title="PyGPT Chatbot",
             analytics_enabled=False
         ).launch()
+
     else:
-        CmdLineInterpreter(temperature=0.2, top_p=0.1)
+        # Run the shell-based CLI:
+        CmdLineInterpreter(model="gpt-4", temperature=0.2, top_p=0.1)
