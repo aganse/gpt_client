@@ -10,11 +10,11 @@ This app can be run either as a terminal/readline based ChatGPT CLI app or as a
 browser-based web-app:
 
 ------
-![screenshot](cli_screenshot.png "Gpt_client CLI Screenshot")
+![screenshot](screenshot_cli.png "Gpt_client CLI Screenshot")
 
 ------
 
-![screenshot](webapp_screenshot.png "Gpt_client WebApp Screenshot")
+![screenshot](screenshot_webapp.png "Gpt_client WebApp Screenshot")
 ------
 
 
