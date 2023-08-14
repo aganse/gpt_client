@@ -201,9 +201,9 @@ def generate_response(input,
     # Check for possible URL in user-submitted text
     webpagetext = None
     skip_input = False
-    url = re.search("<<(.*)>>", input, re.IGNORECASE).group(1)
-
-    if url:
+    url_search = re.search("<<(.*)>>", input, re.IGNORECASE)
+    if url_search:
+        url = url_search.group(1)
         webpagetext, skip_input = get_url_contents(url)
 
     if not skip_input:
@@ -237,14 +237,14 @@ class CmdLineInterpreter(Cmd):
 
     # Set default CmdLinInterpreter interface options:
     # (note still working out issues with escape chars used in readline...)
-    prompt = "Me: "
+    # prompt = "Me: "
     # prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
     # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
-    # prompt = "\n\033[01;32m😃\033[37m\033[01;32m Me:\033[00m "
-    gptprompt = "GPT: "
+    prompt = "\n\033[01;32m😃\033[37m\033[01;32m Me:\033[00m "
+    # gptprompt = "GPT: "
     # gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
     # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
-    # gptprompt = "\033[01;32m🤖\033[37m\033[01;36m GPT:\033[00m "
+    gptprompt = "\033[01;32m🤖\033[37m\033[01;36m GPT:\033[00m "
     # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
     intro = ""
     allow_injections = True
