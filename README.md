@@ -1,4 +1,4 @@
-# A lightweight, Python-based, OpenAI GPT client.
+# A simple Python-based OpenAI GPT client.
 
 Compared to the ChatGPT website, this tool is more configurable, is only a few
 hundred lines of code so is openly easy to understand/follow/modify, and it
