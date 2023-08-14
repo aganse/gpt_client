@@ -1,4 +1,4 @@
-# A lightweight, python-based, OpenAI GPT client.
+# A lightweight, Python-based, OpenAI GPT client.
 
 Compared to the ChatGPT website, this tool is more configurable, is only a few
 hundred lines of code so is openly easy to understand/follow/modify, and it
@@ -22,8 +22,8 @@ browser-based web-app:
 
 ### OpenAI account/key setup:
 
-Getting an [API key](https://platform.openai.com/account/api-keys) (requires
-creating an OpenAI account if you don't have one already) and putting that key
+Get an [API key](https://platform.openai.com/account/api-keys) (requires
+creating an OpenAI account if you don't have one already) and put that key
 in your shell environment, e.g. `export OPENAI_API_KEY=xyz123xyz123...`
 
 Note that any client outside of the one on OpenAI's website (which is free
@@ -46,7 +46,7 @@ had come up because they prioritized folks who'd paid for at least one month of
 ChatGPT-Plus.  I guess it's no guarantee (they hadn't said this on the waitlist
 website) but maybe info that other potential users here would want to know.
 
-### Installing dependencies and run the app:
+### Install dependencies and run the app:
 
 This app can be run either as a terminal/readline based ChatGPT CLI app or as a
 browser-based web-app:
@@ -56,7 +56,7 @@ Usage:  python3 gpt_client.py           # for CLI
    or:  python3 gpt_client.py --gradio  # for web-app
 ```
 
-You must run this in an environment with the following python packages:
+You must run this in an environment with the following Python packages:
   * openai (for the core Open API calls)
   * beautifulsoup4 (for reading contents of urls)
   * rich (for the markdown/syntax-highlighting formatting in CLI)
