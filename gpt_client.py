@@ -15,8 +15,8 @@ Usage:  python3 gpt_client.py           # for CLI
 
 Note you must have your OPENAI_API_KEY env var set.
 
-And you must be in an environment with the following python packages:
-  * openai (for the core Open API calls)
+And you must be in an environment with the following Python packages:
+  * openai (for the core OpenAI calls)
   * beautifulsoup4 (for reading contents of urls)
   * rich (for the markdown/syntax-highlighting formatting in CLI)
   * darkdetect (for putting code syntax or webpage into light/dark mode in CLI)
@@ -47,13 +47,13 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
 def submit_to_gpt(messages, model, temperature, top_p):
-    """Send formatted input contents/parameters to OpenAPI API completion call.
+    """Send formatted input contents/parameters to OpenAI API completion call.
 
     Parameters:
         messages         list     chat history of user & agent messages
-                                  in OpenAPI's list-of-dicts format like
+                                  in OpenAI's list-of-dicts format like
                                   [{"role":___, "content":___}, {...}, ...]
-        model            string   OpenAPI's "gpt-4", "gpt-3.5-turbo", etc.
+        model            string   OpenAI's "gpt-4", "gpt-3.5-turbo", etc.
         temperature      float    consistency/creativity parameter 0.0-1.0
         top_p            float    sampling parameter 0.0-1.0
     Returns:
@@ -93,14 +93,16 @@ def submit_to_gpt(messages, model, temperature, top_p):
     return reply, metadata
 
 
-def get_url_contents(url):
+def get_url_contents(url, maxchar):
     """Scrape webpage text-only contents from given input URL.
 
     Parameters:
         url          string    web address to scrape
+        maxchar      integer   number of chars at which to truncate returned
+                               webapge contents
     Returns:
         webpagetext  string    webpage text-only contents
-        skip_input   boolean   success flag to prevent OpenAPI call if problem
+        skip_input   boolean   success flag to prevent OpenAI call if problem
     """
 
     skip_input = False
@@ -117,7 +119,6 @@ def get_url_contents(url):
         # req = urllib.request.Request(url, data, headers)
         # html = urllib.request.urlopen(url).read()
 
-        maxchar = 15000  # depends on token limit - should make this dynamic
         headers = {  # trying to make sites accept more of these get requests
             "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) "
             "Gecko/20100101 Firefox/78.0"
@@ -160,18 +161,21 @@ def generate_response(input,
                       messages=None,
                       model=None,
                       temperature=None,
-                      top_p=None):
+                      top_p=None,
+                      maxchar=20000):
     """Check for input plugins (like webpage urls), retrieve them, submit input
     to GPT model and return reply.  Args set to None use default value.
 
     Parameters:
         input            string   latest user input message
         messages         list     chat history of user & agent messages
-                                  in OpenAPI's list-of-dicts format like
+                                  in OpenAI's list-of-dicts format like
                                   [{"role":___, "content":___}, {...}, ...]
-        model            string   OpenAPI's "gpt-4", "gpt-3.5-turbo", etc.
+        model            string   OpenAI's "gpt-4", "gpt-3.5-turbo", etc.
         temperature      float    consistency/creativity parameter 0.0-1.0
         top_p            float    sampling parameter 0.0-1.0
+        maxchar          integer  number of chars at which to truncate returned
+                                  webapge contents
     Returns:
         reply            string   latest chatbot reply message
         metadata         dict     dict of non-msg reply info like token counts
@@ -204,7 +208,7 @@ def generate_response(input,
     url_search = re.search("<<(.*)>>", input, re.IGNORECASE)
     if url_search:
         url = url_search.group(1)
-        webpagetext, skip_input = get_url_contents(url)
+        webpagetext, skip_input = get_url_contents(url, maxchar)
 
     if not skip_input:
 
@@ -231,20 +235,19 @@ def generate_response(input,
 
 
 class CmdLineInterpreter(Cmd):
-    """OpenAPI command line interpreter based on built-in python Cmd package.
+    """OpenAI command line interpreter based on built-in Python Cmd package.
     Various configuration parameters are described in constructor doc-string.
     """
 
     # Set default CmdLinInterpreter interface options:
-    # (note still working out issues with escape chars used in readline...)
     # prompt = "Me: "
     # prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
     # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
-    prompt = "\n\033[01;32m😃\033[37m\033[01;32m Me:\033[00m "
+    prompt = "\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 "
     # gptprompt = "GPT: "
     # gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
     # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
-    gptprompt = "\033[01;32m🤖\033[37m\033[01;36m GPT:\033[00m "
+    gptprompt = "\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 "
     # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
     intro = ""
     allow_injections = True
@@ -282,9 +285,9 @@ class CmdLineInterpreter(Cmd):
             intro            string   opening/greeting lines in CLI
             history_file     string   CLI history path (default ~/.gpt_history)
             messages         list     chat history of user & agent messages
-                                      in OpenAPI's list-of-dicts format like
+                                      in OpenAI's list-of-dicts format like
                                       [{"role":___, "content":___}, {...}, ...]
-            model            string   OpenAPI's "gpt-4", "gpt-3.5-turbo", etc.
+            model            string   OpenAI's "gpt-4", "gpt-3.5-turbo", etc.
             temperature      float    consistency/creativity parameter 0.0-1.0
             top_p            float    sampling parameter 0.0-1.0
             allow_injections boolean  allow insertion of weblinks
@@ -312,6 +315,14 @@ class CmdLineInterpreter(Cmd):
         if history_file is not None:
             self.history_file = history_file
 
+        # Set up the readline handling:
+        if 'libedit' in readline.__doc__:
+            readline.parse_and_bind("bind ^I rl_complete")
+        else:
+            readline.parse_and_bind("tab: complete")
+        if os.path.exists(self.history_file):
+            readline.read_history_file(self.history_file)
+
         # Initialize the greeting/intro message on startup
         Cmd.__init__(self)
         if self.model is not None:
@@ -326,14 +337,6 @@ class CmdLineInterpreter(Cmd):
         self.intro += "\n"
         self.cmdloop(intro=self.intro)
 
-        # Set up the readline handling:
-        if 'libedit' in readline.__doc__:
-            readline.parse_and_bind("bind ^I rl_complete")
-        else:
-            readline.parse_and_bind("tab: complete")
-        if os.path.exists(self.history_file):
-            readline.read_history_file(self.history_file)
-
     def cmdloop(self, intro):
         try:
             Cmd.cmdloop(self, self.intro)
@@ -347,11 +350,7 @@ class CmdLineInterpreter(Cmd):
         pass
 
     def do_exit(self, line=None):
-        print(" Ok, goodbye...")
-        readline.write_history_file(self.history_file)
-        # Still experimenting with readline variations - clean this up later:
-        # readline.append_history_file(readline.get_current_history_length(),
-        #                              self.history_file)
+        print("\n\nOk, goodbye...")
 
         return True
 
@@ -367,6 +366,9 @@ class CmdLineInterpreter(Cmd):
         # print(f"model: {self.model}")
         # print(f"temperature: {self.temperature}")
         # print(f"top_p: {self.top_p}")
+
+        # Append latest input line just entered to history file
+        readline.append_history_file(1, self.history_file)
 
         reply, metadata = generate_response(line,
                                             self.messages,
