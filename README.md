@@ -1,8 +1,8 @@
 # A simple Python-based OpenAI GPT client.
 
 Compared to the ChatGPT website, this tool is more configurable, is only a few
-hundred lines of code so is openly easy to understand/follow/modify, and it
-allows for use of GPT-4 and plug-in options (like inserting weblinks without
+hundred lines of code in one module so is easy to understand/follow/modify, and
+it allows for use of GPT-4 and plug-in options (like inserting weblinks without
 paying the hefty monthly fee for ChatGPT-Plus).  Note it does involve paying
 fees for the OpenAI calls - but for one's individual use rather than public
 internet app use by many people, the API fees are literally pennies per month.
