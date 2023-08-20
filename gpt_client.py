@@ -1,6 +1,6 @@
-""" Gpt_client - A lightweight, python-based, open-source, OpenAPI GPT client.
+""" Gpt_client - A simple Python-based OpenAI GPT client.
 
-Compared to the ChatGPT website this is more configurable, is only a few
+Compared to the ChatGPT website this tool is more configurable, is only a few
 hundred lines of open-source code so is easy to understand/follow/modify,
 allows GPT-4 and plug-in options like inserting weblinks without paying the
 hefty monthly fee for ChatGPT-Plus.  (However, note it does involve paying fees
