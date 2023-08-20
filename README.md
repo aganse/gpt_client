@@ -1,17 +1,32 @@
-# openai_llm_tools
-CLI tools to access the OpenAI LLM APIs, starting with a ChatGPT client.
+# A simple Python-based OpenAI GPT client.
 
-> **TL;DR:** get an OpenAPI key and put it in env var OPENAI_API_KEY, make a
-> python env and pip install the openai, rich, & beautifulsoup4 packages, then
-> run **python pygpt.py**.  Bashgpt is older, has some problems, and is just
-> for reference.
+Compared to the ChatGPT website, this tool is more configurable, is only a few
+hundred lines of code so is openly easy to understand/follow/modify, and it
+allows for use of GPT-4 and plug-in options (like inserting weblinks without
+paying the hefty monthly fee for ChatGPT-Plus).  Note it does involve paying
+fees for the OpenAI calls - but for one's individual use rather than public
+internet app use by many people, the API fees are literally pennies per month.
+This app can be run either as a terminal/readline based ChatGPT CLI app or as a
+browser-based web-app:
 
-OpenAI serves a ChatGPT web client on its webpage, but I really prefer to keep
-certain things in the terminal, especially if I often copy/paste the results
-into a neighboring tmux pane.  Plus scripts like this offer me the ability to
-experiment with more detailed prompt engineering and the API output.
+------
+![screenshot](screenshot_cli.png "Gpt_client CLI Screenshot")
 
-Be aware that any client outside of the one on OpenAI's website (which is free
+------
+
+![screenshot](screenshot_webapp.png "Gpt_client WebApp Screenshot")
+------
+
+
+## Usage
+
+### OpenAI account/key setup:
+
+Get an [API key](https://platform.openai.com/account/api-keys) (requires
+creating an OpenAI account if you don't have one already) and put that key
+in your shell environment, e.g. `export OPENAI_API_KEY=xyz123xyz123...`
+
+Note that any client outside of the one on OpenAI's website (which is free
 for ChatGPT) requires an [API key](https://platform.openai.com/account/api-keys)
 to access the API, and making calls to this API does 
 [cost money](https://openai.com/pricing#language-models).
@@ -21,75 +36,50 @@ as opposed to serving it out to zillions of other users to use in a web app.
 Like in my initial two days of fairly heavy usage I racked up a whole $0.20;
 after a few months of light-moderate usage since then, I'm now up to $0.50.
 
-Two scripts here so far, which both provide very similar-looking CLI experience
-for ChatGPT:
+As a new user of the OpenAI platform (as of this Aug 2023 writing anyway)
+you'll only have access to the gpt-3.5-turbo model, not gpt-4.  However, I
+found that I was able to get access to gpt-4 use myself by first signiing up
+onto its waitlist on the OpenAI website, then signing up for just one month
+of the $20/month ChatGPT-Plus program on the website, cancelling that after one
+month, and a week or so later they sent me an email saying my waitlist position
+had come up because they prioritized folks who'd paid for at least one month of
+ChatGPT-Plus.  I guess it's no guarantee (they hadn't said this on the waitlist
+website) but maybe info that other potential users here would want to know.
 
-`pygpt`: Basic command-line ChatGPT-API client in Python, implementing packages
-and tools like readline, syntax highlighting, prompt formatting, etc.  No command
-line arguments yet; currently the few options are set inside the script, but I'll
-add a click (or other) CLI soon that includes these.  Contents auto-wrap to the
-width of the current terminal window.
+### Install dependencies and run the app:
 
-`bashgpt`: *(deprecated)*:
-Basic command-line ChatGPT-API client in Bash, implementing shell
-tools like readline, syntax highlighting, prompt formatting, etc.  No command
-line arguments; currently the few options are at the top of the bash script
-(ideally I'd move them to command line args).  Contents auto-wrap to the width
-of the current terminal window.
-**Danger:** a trouble in this bash client is stabilizing escape-character
-handling over looping/reuse of messages.  Escaping works in first few rounds but
-can get lost later which breaks the app; usually it's a round or two after code
-snippets that include characters like `*`, `\`, and `%` and can even cause
-file listing of your local directory to leak into the prompt sent to ChatGPT API.
-So I've moved on to the python client but leaving this bash one for reference.
+This app can be run either as a terminal/readline based ChatGPT CLI app or as a
+browser-based web-app:
 
+```bash
+Usage:  python3 gpt_client.py           # for CLI
+   or:  python3 gpt_client.py --gradio  # for web-app
+```
 
-------
-![screenshot](screenshot.png "Screenshot")
-------
+You must run this in an environment with the following Python packages:
+  * openai (for the core Open API calls)
+  * beautifulsoup4 (for reading contents of urls)
+  * rich (for the markdown/syntax-highlighting formatting in CLI)
+  * darkdetect (for putting code syntax or webpage into light/dark mode in CLI)
+  * gradio (for the quickie webapp interface)
 
+```bash
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install openai rich darkdetect beautifulsoup4 gradio
+  export OPENAI_API_KEY=xyz123xyz123...
+  python gpt_client.py
+```
 
-## Usage
+The command line (CLI) client uses readline, so all the usual hot keys /
+editing work including a command history via Ctrl-P and Ctrl-N.  Quit via:
+`quit` or `exit` or `q` or `ctrl-D` or `ctrl-C`.
 
-1. Get an [API key](https://platform.openai.com/account/api-keys) (requires
-creating an OpenAI account if you don't have one already) and put that key in
-your shell environment, e.g. `export OPENAI_API_KEY=xyz123...`
+The web-app is a quickie implemention via Gradio - after starting the app
+it'll output the local URL to paste into your web browser to access the app.
 
-2. Install dependencies and run the app:
-
-    1. for Python-based `pygpt`:
-     
-        1. create and enter a python environment, e.g. `python3 -m venv ~/.venv; source ~/.venv/bin/activate`
-    
-        2. install two python package dependencies:
-           `pip install openai rich beautifulsoup4`
-    
-        3. run the app: `python /path/to/openai_llm_tools/pygpt.py`
-           The client's command line uses readline, so all the usual hot keys /
-           editing work including a command history via Ctrl-P and Ctrl-N.
-    
-        4. quit via: `quit` or `exit` or `q` or `ctrl-D` or `ctrl-C`.
-     
-    2. for Bash-based `bashgpt`:
-     
-        1. install `jq` and `rlwrap`, which are standard linux tools.
-           (e.g. `sudo apt install jq` and `sudo apt install rlwrap`, or
-           `brew install jq` and `brew install rlwrap`...)
-    
-        2. it's not required for bashgpt, but if you wish to have the syntax
-           highlighting and other formatting in running the client, you'll need to
-           install `rich-cli`, either via `brew install rich-cli` or
-           `pip install rich-cli`.  If you choose to skip installing this, set
-           `use_formatter=0` in the top of the bashgpt script.  (It's set to use it
-           by default `=1`).  It can always be changed later.
-    
-        3. run the app: `/path/to/openai_llm_tools/bashgpt`
-           no arguments currently - and that'll start the client.  Ctrl-C to quit.
-           The client's command line uses readline, so all the usual hot keys /
-           editing work including a command history via Ctrl-P and Ctrl-N.
-
-3. Know that OpenAI's GPT API is an immensely popular service right now and
-that regardless of which client you use (one of these CLI ones, their website
+Lastly know that OpenAI's GPT API is an immensely popular service right now and
+that regardless of which client you use (one of these, or the ChatGPT website
 one, or any other), expect that there are definitely slow times.  I've
 experienced response wait times of up to 20sec and once-in-a-while responses
 of "too busy right now".  But *usually* the responses are within a few seconds.
@@ -109,4 +99,21 @@ More detailed usage instructions for these models in terms of crafting queries:
 Details about additional chatgpt parameters for tuning functionality:
 
   https://platform.openai.com/docs/api-reference/chat/create
+
+Thoughts for values of temperature and top_p for different use-cases:
+
+  Arbitrary example table below comes from a forum entry at:
+  https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api-a-few-tips-and-tricks-on-controlling-the-creativity-deterministic-output-of-prompt-responses/172683
+  Take these contents with a grain of salt - eg note OpenAI ref docs suggest
+  only changing Temp and Top_p independently - but experiment and see what works!
+
+  Use Case                 | Temp |  Top_p |  Description
+  ------------------------ | ---- |  ----- |  ------------------------------------
+  Code Generation          |  0.2 |  0.1   |  Generates code that adheres to established patterns and conventions. Output is more deterministic and focused. Useful for generating syntactically correct code.
+  Creative Writing         |  0.7 |  0.8   |  Generates creative and diverse text for storytelling. Output is more exploratory and less constrained by patterns.
+  Chatbot Responses        |  0.5 |  0.5   |  Generates conversational responses that balance coherence and diversity. Output is more natural and engaging.
+  Code Comment Generation  |  0.3 |  0.2   |  Generates code comments that are more likely to be concise and relevant. Output is more deterministic and adheres to conventions.
+  Data Analysis Scripting  |  0.2 |  0.1   |  Generates data analysis scripts that are more likely to be correct and efficient. Output is more deterministic and focused.
+  Exploratory Code Writing |  0.6 |  0.7   |  Generates code that explores alternative solutions and creative approaches. Output is less constrained by established patterns.
+
 
