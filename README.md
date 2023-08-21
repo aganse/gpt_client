@@ -6,8 +6,8 @@ it allows for use of GPT-4 and plug-in options (like inserting weblinks without
 paying the hefty monthly fee for ChatGPT-Plus).  Note it does involve paying
 fees for the OpenAI calls - but for one's individual use rather than public
 internet app use by many people, the API fees are literally pennies per month.
-This app can be run either as a terminal/readline based ChatGPT CLI app or as a
-browser-based web-app:
+This app can be run either as a terminal/readline based CLI or as a
+browser based web-app:
 
 ------
 ![screenshot](screenshot_cli.png "Gpt_client CLI Screenshot")
