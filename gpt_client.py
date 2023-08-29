@@ -162,7 +162,7 @@ def generate_response(input,
                       model=None,
                       temperature=None,
                       top_p=None,
-                      maxchar=20000):
+                      maxchar=15000):
     """Check for input plugins (like webpage urls), retrieve them, submit input
     to GPT model and return reply.  Args set to None use default value.
 
@@ -249,7 +249,7 @@ class CmdLineInterpreter(Cmd):
     # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
     gptprompt = "\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 "
     # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
-    intro = ""
+    intro = "Params: "
     allow_injections = True
     if darkdetect.isDark():
         code_theme = "monokai"
@@ -262,6 +262,7 @@ class CmdLineInterpreter(Cmd):
     model = None
     temperature = None
     top_p = None
+    maxchar = None
 
     console = Console()
 
@@ -275,6 +276,7 @@ class CmdLineInterpreter(Cmd):
                  model=None,
                  temperature=None,
                  top_p=None,
+                 maxchar=None,
                  allow_injections=None,
                  ):
         """
@@ -290,6 +292,7 @@ class CmdLineInterpreter(Cmd):
             model            string   OpenAI's "gpt-4", "gpt-3.5-turbo", etc.
             temperature      float    consistency/creativity parameter 0.0-1.0
             top_p            float    sampling parameter 0.0-1.0
+            maxchar          integer  numchars to trunc inserted webpage at
             allow_injections boolean  allow insertion of weblinks
         """
 
@@ -310,6 +313,8 @@ class CmdLineInterpreter(Cmd):
             self.temperature = temperature
         if top_p is not None:
             self.top_p = top_p
+        if maxchar is not None:
+            self.maxchar = maxchar
         if allow_injections is not None:
             self.allow_injections = allow_injections
         if history_file is not None:
@@ -331,6 +336,8 @@ class CmdLineInterpreter(Cmd):
             self.intro += f"temp={self.temperature}  "
         if self.top_p is not None:
             self.intro += f"top_p={self.top_p}  "
+        if self.maxchar is not None:
+            self.maxchar += f"maxchar={self.maxchar}  "
         if self.allow_injections:
             self.intro += ("\nYou can enter page contents of a URL by putting "
                            "the URL in double chevrons like this: <<URL>> ")
@@ -374,7 +381,8 @@ class CmdLineInterpreter(Cmd):
                                             self.messages,
                                             self.model,
                                             self.temperature,
-                                            self.top_p)
+                                            self.top_p,
+                                            self.maxchar)
 
         # Handle markdown and syntax highlighting and word/line wrapping;
         # technically could just use print() instead, just not as pretty.
@@ -413,6 +421,7 @@ def gradio_response(input, history):
     model = "gpt-4"
     temperature = 0.2
     top_p = 0.1
+    maxchar = 15000
 
     messages = [{"role": "user" if i % 2 == 0 else "assistant",
                  "content": content}
@@ -421,7 +430,8 @@ def gradio_response(input, history):
                                         messages,
                                         model,
                                         temperature,
-                                        top_p)
+                                        top_p,
+                                        maxchar)
     return reply
 
 
@@ -437,6 +447,7 @@ if __name__ == '__main__':
       model
       temperature
       top_p
+      maxchar
       allow_injections
     """
 

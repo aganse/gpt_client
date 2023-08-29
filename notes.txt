@@ -1,0 +1,43 @@
+😃 Me: hi, i have a python script providing a chatbot that interfaces OpenAI's
+GPT API.  it's supposed to keep an accumulating history of the messages
+exchanged in the messages list.  but for reasons I can't track down (can you
+help?), it occasionally "forgets" its history, for which i *think* (but am not
+sure) that it drops entries from the messages list.  however that might not be
+what's happening - I suppose also upon submission somehow the messages get lost
+- but the key is that it only happens sometimes not always, in fact I think it's
+  often when inserting a webpage url happens.  anyway, can you see why sometimes
+the message history gets lost?  here's my python script:
+<<https://raw.githubusercontent.com/aganse/gpt_client/main/gpt_client.py>>
+[4112 prompt-tokens; includes resubmission of all history this session plus
+contents of urls...]
+ 
+🤖 GPT: The issue you're experiencing might be due to the way the messages list
+is being handled. In your generate_response function, you're appending new
+messages to the messages list. However, if an exception occurs during the
+submit_to_gpt function, the function returns an empty string and the messages
+list is not updated with  the assistant's response. This could potentially cause
+the chat history to be lost or become inconsistent.                                                                        
+
+One way to address this issue could be to ensure that the messages list is
+updated in the generate_response function only after a successful API call. This
+would ensure that the messages list always contains the complete history of the
+conversation.                                                                                                           
+
+Also, it's worth noting that the OpenAI API has a maximum token limit (4096
+tokens for gpt-3.5-turbo and 40960 for gpt-4). If a conversation exceeds this
+limit, you'll need to   truncate, omit, or otherwise reduce your text until it
+fits. If the conversation history becomes too long and is truncated, this could
+also give the appearance of the bot "forgetting" its history.                                                                                                                                                         
+
+Lastly, if the issue seems to occur when inserting a webpage URL, it might be
+related to the get_url_contents function. If an exception occurs while trying to
+retrieve the webpage contents, the skip_input flag is set to True and the input
+is not processed further. This could potentially cause some messages to be lost.
+You might want to add some additional error handling or logging here to help
+debug this issue.  [319 completion-tokens just for this response...]
+
+
+
+[just noting I have since found it doesn't only happen when submitting url's,
+ also without submitting url's, but all these suggestions seem helpful...]
+
