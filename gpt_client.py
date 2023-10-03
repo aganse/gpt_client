@@ -108,6 +108,9 @@ def submit_to_gpt(messages, model, temperature, top_p):
         errormsg = e.response["error"]["message"]
         print(f"OpenAI API Error: {errormsg}")
         return ""
+    except openai.error.ServiceUnavailableError as e:
+        print(f"Sorry, API appears to be temporarily unavailable: {e.reason}.")
+        return ""
     except openai.error.RateLimitError as e:
         print(f"Sorry, hit a too-many-users limit: {e.reason}.")
         return ""
