@@ -1,21 +1,26 @@
 """ Gpt_client - A simple Python-based OpenAI GPT client.
 
-Compared to the ChatGPT website this tool is more configurable, is only a few
+Compared to the ChatGPT website this tool is more configurable, is only several
 hundred lines of open-source code so is easy to understand/follow/modify,
+provides standard Linux readline-based command line functionality, and
 allows GPT-4 and plug-in options like inserting weblinks without paying the
 hefty monthly fee for ChatGPT-Plus.  (However, note it does involve paying fees
-for API calls - but for personal use rather than public internet app use, this
+for API calls - but for personal use rather than public internet app use this
 is literally pennies per month.)
 
-Can be run either as a terminal/readline based ChatGPT CLI app or as a
-browser-based web-app:
+Can be run either as a terminal-based ChatGPT CLI or as a browser-based web-app.
 
-Usage:  python3 gpt_client.py           # for CLI
-   or:  python3 gpt_client.py --gradio  # for web-app on localhost
+Usage:
+    python3 gpt_client.py --help
+which lists the two entrypoint commands:
+    python3 gpt_client.py cli --help
+    python3 gpt_client.py webapp --help
+whose command line options are specified in their help listings.
 
-Note you must have your OPENAI_API_KEY env var set.
+Note you must have your OPENAI_API_KEY environment variable set.
 
-And you must be in an environment with the following Python packages:
+And you must be in an environment with the following Python packages, which can
+be installed with the standard pip requirements file.
   * openai (for the core OpenAI calls)
   * beautifulsoup4 (for reading contents of urls)
   * rich (for the markdown/syntax-highlighting formatting in CLI)
@@ -24,7 +29,7 @@ And you must be in an environment with the following Python packages:
 
   python3 -m venv .venv
   source .venv/bin/activate
-  pip install openai rich darkdetect beautifulsoup4 gradio
+  pip install -r requirements.txt
 
 """
 
@@ -46,7 +51,7 @@ from rich.markdown import Markdown
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
-# default GPT parameters
+# defaults for GPT parameters:
 MODEL = "gpt-4"
 TEMPERATURE = 0.2
 TOP_P = 0.1
@@ -65,6 +70,13 @@ MESSAGES = [{
     "notation. The assistant only very occasionally uses emojis to "
     "show enthusiasm."
 }]
+# defaults for CLI parameters:
+PROMPT = "\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 "
+GPTPROMPT = "\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 "
+CODE_THEME = "monokai" if darkdetect.isDark() else "default"
+INTRO = "Params: <params>\n<instructions>\n"
+HISTORY_FILE = os.path.expanduser('~/.gpt_history')
+
 
 
 def submit_to_gpt(messages, model, temperature, top_p):
@@ -353,8 +365,6 @@ class CmdLineInterpreter(Cmd):
 
         # Handle markdown and syntax highlighting and word/line wrapping;
         # technically could just use print() instead, just not as pretty.
-        # Should move making the tokens-status lines into generate_response()
-        # and only do the formatting/output here:
         self.console.print(
             f"[grey78][{metadata['prompt_tokens']} prompt-tokens; "
             "includes resubmission of all history this session plus "
@@ -383,13 +393,19 @@ def gradio_response(input, history):
                            representing the chat history.
     Returns:
         reply    string    latest chatbot reply message
+
+    To-Do:
+        Still need to find a good way to pipe the GPT parameters into this
+        function so they can be used in the args of generate_response().  But
+        this functions args are pinned via Gradio.ChatInterface() requirements.
     """
 
-    # Create messages list chatgpt expects from content list gradio expects
+    # Create messages list chatgpt expects from the content list gradio expects
     messages = [
         {"role": "user" if i % 2 == 0 else "assistant", "content": content}
         for sublist in history for i, content in enumerate(sublist)
     ]
+
     reply, metadata, messages = generate_response(
         input,
         messages=MESSAGES,
@@ -399,95 +415,50 @@ def gradio_response(input, history):
         maxchar=MAXCHAR,
         debug=DEBUG
     )
+
     return reply
 
 
-#if __name__ == '__main__':
-#    """Call the app from the command line to start either CLI or web-app.
-#    Next steps will implement click to pass constructor params as cmdline args:
-#      prompt           - CLI only
-#      gptprompt        - CLI only
-#      code_theme       - CLI only
-#      intro            - CLI only
-#      history_file     - CLI only
-#      messages
-#      model
-#      temperature
-#      top_p
-#      maxchar
-#      allow_injections
-#    """
-
-#    if len(sys.argv) > 1 and sys.argv[1] == "--gradio":
-#        # Run the web-browser-based web app:
-#        print("Starting local web-app version of gpt_client:")
-#        gr.ChatInterface(
-#            gradio_response,
-#            title="GPTclient Chatbot",
-#            analytics_enabled=False,
-#        ).launch()
-
-#    else:
-#        # prompt = "Me: "
-#        # prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
-#        # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
-#        ##prompt = "\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 "
-#        # gptprompt = "GPT: "
-#        # gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
-#        # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
-#        ##gptprompt = "\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 "
-#        # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
-
-#        # Run the shell-based CLI:
-#        CmdLineInterpreter(
-#            prompt="\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 ",
-#            gptprompt="\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 ",
-#            model="gpt-4",
-#            temperature=0.2,
-#            top_p=0.1,
-#            maxchar=20000,
-#            debug=False,
-#        )
-
-
 @click.group()
-def cligrp():
+def clickgrp():
+    """Group the two entrypoint commands into one command line"""
     pass
 
-@click.command()
-@click.option('--model', default="gpt-4", help='OpenAI model')
-@click.option('--temperature', default=0.2, help='Consistency/creativity parameter')
-@click.option('--top_p', default=0.1, help='Sampling parameter')
-@click.option('--maxchar', default=20000, help='Number of chars at which to truncate returned webpage contents')
-@click.option('--debug', default=False, help='Turn on verbose debug output')
-def gpt_params(model, temperature, top_p, maxchar, debug):
-    """get GPT model parameters"""
-    return {'model': model, 'temperature': temperature, 'top_p': top_p, 'maxchar': maxchar, 'debug': debug}
+def common_options(f):
+    """Decorator to avoid redundantly specifying shared/common options"""
+    options = [
+        click.option('--model', default=MODEL, help='OpenAI model'),
+        click.option('--temperature', default=TEMPERATURE, help='Consistency/creativity parameter'),
+        click.option('--top_p', default=TOP_P, help='Sampling parameter'),                                                                                                                  click.option('--maxchar', default=20000, help='Number of chars at which to truncate returned webpage contents'),
+        click.option('--allow_injections', default=ALLOW_INJECTIONS, help='Allow insertion of weblinks'),
+        click.option('--maxchar', default=MAXCHAR, help='Truncate webpage content at this number of characters'),
+        click.option('--messages', default=MESSAGES, help='Initial system message specify chatbot personality/functionality'),
+        click.option('--debug', default=DEBUG, help='Enable verbose debug output'),
+    ]
+    for option in reversed(options):
+        f = option(f)
+    return f
 
-@click.command()
-@click.option('--prompt', default="\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 ", help='User input prompt string in CLI')
-@click.option('--gptprompt', default="\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 ", help='Chatbot response prompt string in CLI')
-@click.option('--code_theme', default="monokai" if darkdetect.isDark() else "default", help='Syntax highlight theme in Rich in CLI')
-@click.option('--intro', default="Params: \n\n", help='Opening/greeting lines in CLI')
-@click.option('--history_file', default=os.path.expanduser('~/.gpt_history'), help='CLI history path')
-@click.option('--allow_injections', default=True, help='Allow insertion of weblinks')
-def cli_params(prompt, gptprompt, code_theme, intro, history_file, allow_injections):
-    """get CLI-specific arguments"""
-    return {'prompt': prompt, 'gptprompt': gptprompt, 'code_theme': code_theme, 'intro': intro, 'history_file': history_file, 'allow_injections': allow_injections}
-
-@cligrp.command()
-@click.pass_context
-def cli(ctx):
+@clickgrp.command()
+@common_options
+@click.option('--prompt', default=PROMPT, help='User input prompt string in CLI')
+@click.option('--gptprompt', default=GPTPROMPT, help='Chatbot response prompt string in CLI')
+@click.option('--code_theme', default=CODE_THEME, help='Syntax highlight theme in Rich in CLI')
+@click.option('--intro', default=INTRO, help='Opening/greeting lines in CLI')
+@click.option('--history_file', default=HISTORY_FILE, help='CLI history path')
+def cli(**kwargs):
     """Command for CLI entry point"""
-    gpt_params_dict = ctx.invoke(gpt_params)
-    cli_params_dict = ctx.invoke(cli_params)
-    CmdLineInterpreter(**gpt_params_dict, **cli_params_dict)
+    CmdLineInterpreter(**kwargs)
 
-@cligrp.command()
-@click.pass_context
-def webapp(ctx):
-    """Command for Gradio-based web app entry point"""
-    ctx.invoke(gpt_params)
+@clickgrp.command()
+@common_options
+def webapp(**kwargs):
+    """Command for Gradio-based web app entry point.
+
+       To-do: Still need to find a good way to pipe the GPT parameters into this
+       function so they can be used in the args of generate_response().  But
+       this functions args are pinned via Gradio.ChatInterface() requirements.
+    """
     gr.ChatInterface(
         gradio_response,
         title="GPTclient Chatbot",
@@ -496,4 +467,4 @@ def webapp(ctx):
 
 
 if __name__ == '__main__':
-    cligrp()
+    clickgrp()
