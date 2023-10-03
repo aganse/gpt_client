@@ -52,11 +52,13 @@ This app can be run either as a terminal/readline based ChatGPT CLI app or as a
 browser-based web-app:
 
 ```bash
-Usage:  python3 gpt_client.py           # for CLI
-   or:  python3 gpt_client.py --gradio  # for web-app
+Usage:
+    python3 gpt_client.py cli --model=gpt-4 --temperature=0.2 --prompt="Me: "
+    python3 gpt_client.py webapp --model=gpt-4 --temperature=0.2 . 
 ```
 
-You must run this in an environment with the following Python packages:
+You must run this in an environment with the following Python packages (as
+installed from the requirements.txt file):
   * openai (for the core Open API calls)
   * beautifulsoup4 (for reading contents of urls)
   * rich (for the markdown/syntax-highlighting formatting in CLI)
@@ -66,7 +68,7 @@ You must run this in an environment with the following Python packages:
 ```bash
   python3 -m venv .venv
   source .venv/bin/activate
-  pip install openai rich darkdetect beautifulsoup4 gradio
+  pip install -r requirements.txt
   export OPENAI_API_KEY=xyz123xyz123...
   python gpt_client.py
 ```

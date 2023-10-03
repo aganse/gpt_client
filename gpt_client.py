@@ -36,6 +36,7 @@ import sys
 import urllib
 
 from bs4 import BeautifulSoup
+import click
 import darkdetect
 import gradio as gr
 import openai
@@ -401,49 +402,98 @@ def gradio_response(input, history):
     return reply
 
 
+#if __name__ == '__main__':
+#    """Call the app from the command line to start either CLI or web-app.
+#    Next steps will implement click to pass constructor params as cmdline args:
+#      prompt           - CLI only
+#      gptprompt        - CLI only
+#      code_theme       - CLI only
+#      intro            - CLI only
+#      history_file     - CLI only
+#      messages
+#      model
+#      temperature
+#      top_p
+#      maxchar
+#      allow_injections
+#    """
+
+#    if len(sys.argv) > 1 and sys.argv[1] == "--gradio":
+#        # Run the web-browser-based web app:
+#        print("Starting local web-app version of gpt_client:")
+#        gr.ChatInterface(
+#            gradio_response,
+#            title="GPTclient Chatbot",
+#            analytics_enabled=False,
+#        ).launch()
+
+#    else:
+#        # prompt = "Me: "
+#        # prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
+#        # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
+#        ##prompt = "\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 "
+#        # gptprompt = "GPT: "
+#        # gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
+#        # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
+#        ##gptprompt = "\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 "
+#        # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
+
+#        # Run the shell-based CLI:
+#        CmdLineInterpreter(
+#            prompt="\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 ",
+#            gptprompt="\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 ",
+#            model="gpt-4",
+#            temperature=0.2,
+#            top_p=0.1,
+#            maxchar=20000,
+#            debug=False,
+#        )
+
+
+@click.group()
+def cligrp():
+    pass
+
+@click.command()
+@click.option('--model', default="gpt-4", help='OpenAI model')
+@click.option('--temperature', default=0.2, help='Consistency/creativity parameter')
+@click.option('--top_p', default=0.1, help='Sampling parameter')
+@click.option('--maxchar', default=20000, help='Number of chars at which to truncate returned webpage contents')
+@click.option('--debug', default=False, help='Turn on verbose debug output')
+def gpt_params(model, temperature, top_p, maxchar, debug):
+    """get GPT model parameters"""
+    return {'model': model, 'temperature': temperature, 'top_p': top_p, 'maxchar': maxchar, 'debug': debug}
+
+@click.command()
+@click.option('--prompt', default="\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 ", help='User input prompt string in CLI')
+@click.option('--gptprompt', default="\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 ", help='Chatbot response prompt string in CLI')
+@click.option('--code_theme', default="monokai" if darkdetect.isDark() else "default", help='Syntax highlight theme in Rich in CLI')
+@click.option('--intro', default="Params: \n\n", help='Opening/greeting lines in CLI')
+@click.option('--history_file', default=os.path.expanduser('~/.gpt_history'), help='CLI history path')
+@click.option('--allow_injections', default=True, help='Allow insertion of weblinks')
+def cli_params(prompt, gptprompt, code_theme, intro, history_file, allow_injections):
+    """get CLI-specific arguments"""
+    return {'prompt': prompt, 'gptprompt': gptprompt, 'code_theme': code_theme, 'intro': intro, 'history_file': history_file, 'allow_injections': allow_injections}
+
+@cligrp.command()
+@click.pass_context
+def cli(ctx):
+    """Command for CLI entry point"""
+    gpt_params_dict = ctx.invoke(gpt_params)
+    cli_params_dict = ctx.invoke(cli_params)
+    CmdLineInterpreter(**gpt_params_dict, **cli_params_dict)
+
+@cligrp.command()
+@click.pass_context
+def webapp(ctx):
+    """Command for Gradio-based web app entry point"""
+    ctx.invoke(gpt_params)
+    gr.ChatInterface(
+        gradio_response,
+        title="GPTclient Chatbot",
+        analytics_enabled=False,
+    ).launch()
+
+
 if __name__ == '__main__':
-    """Call the app from the command line to start either CLI or web-app.
-    Next steps will implement click to pass constructor params as cmdline args:
-      prompt           - CLI only
-      gptprompt        - CLI only
-      code_theme       - CLI only
-      intro            - CLI only
-      history_file     - CLI only
-      messages
-      model
-      temperature
-      top_p
-      maxchar
-      allow_injections
-    """
-
-    if len(sys.argv) > 1 and sys.argv[1] == "--gradio":
-        # Run the web-browser-based web app:
-        print("Starting local web-app version of gpt_client:")
-        gr.ChatInterface(
-            gradio_response,
-            title="GPTclient Chatbot",
-            analytics_enabled=False,
-        ).launch()
-
-    else:
-        # prompt = "Me: "
-        # prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
-        # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
-        ##prompt = "\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 "
-        # gptprompt = "GPT: "
-        # gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
-        # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
-        ##gptprompt = "\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 "
-        # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
-
-        # Run the shell-based CLI:
-        CmdLineInterpreter(
-            prompt="\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 ",
-            gptprompt="\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 ",
-            model="gpt-4",
-            temperature=0.2,
-            top_p=0.1,
-            maxchar=20000,
-            debug=False,
-        )
+    cligrp()
