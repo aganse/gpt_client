@@ -11,7 +11,7 @@ Can be run either as a terminal/readline based ChatGPT CLI app or as a
 browser-based web-app:
 
 Usage:  python3 gpt_client.py           # for CLI
-   or:  python3 gpt_client.py --gradio  # for web-app
+   or:  python3 gpt_client.py --gradio  # for web-app on localhost
 
 Note you must have your OPENAI_API_KEY env var set.
 
@@ -44,6 +44,26 @@ from rich.markdown import Markdown
 
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
+
+# default GPT parameters
+MODEL = "gpt-4"
+TEMPERATURE = 0.2
+TOP_P = 0.1
+MAXCHAR = 20000
+ALLOW_INJECTIONS = True
+DEBUG = False
+MESSAGES = [{
+    "role": "system", "content": "The following is a conversation with"
+    " an AI assistant. The assistant is helpful, creative, friendly. "
+    "Its answers are polite but brief, only rarely exceeding "
+    "a single paragraph when really necessary to explain a point. "
+    "The assistant labels all markdown code snippets with the code "
+    "language. Mathematical answers and expressions written by the "
+    "assistant are always formatted in unicode characters rather than "
+    "latex, using full mathematical notation rather than programming "
+    "notation. The assistant only very occasionally uses emojis to "
+    "show enthusiasm."
+}]
 
 
 def submit_to_gpt(messages, model, temperature, top_p):
@@ -108,22 +128,7 @@ def get_url_contents(url, maxchar):
     skip_input = False
 
     try:
-        # Still experimenting with some of the html-passing code - clean later:
-        # values = {"name": "Michael Foord",
-        #           "location": "Northampton",
-        #           "language": "Python"}
-        # resp = requests.get("https://www.embassy-worldwide.com",
-        #                     headers=headers)
-        # data = urllib.parse.urlencode(values)
-        # data = data.encode("ascii")
-        # req = urllib.request.Request(url, data, headers)
-        # html = urllib.request.urlopen(url).read()
-
-        headers = {  # trying to make sites accept more of these get requests
-            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) "
-            "Gecko/20100101 Firefox/78.0"
-        }
-        req = urllib.request.Request(url, headers=headers)
+        req = urllib.request.Request(url)
         html = urllib.request.urlopen(req).read()
         webpagetext = BeautifulSoup(html, "html.parser").get_text()
         webpagetext = webpagetext.replace("\n", " ")
@@ -158,13 +163,14 @@ def get_url_contents(url, maxchar):
 
 
 def generate_response(input,
-                      messages=None,
-                      model=None,
-                      temperature=None,
-                      top_p=None,
-                      maxchar=15000):
+                      messages=MESSAGES,
+                      model=MODEL,
+                      temperature=TEMPERATURE,
+                      top_p=TOP_P,
+                      maxchar=MAXCHAR,
+                      debug=DEBUG):
     """Check for input plugins (like webpage urls), retrieve them, submit input
-    to GPT model and return reply.  Args set to None use default value.
+    to GPT model and return reply.
 
     Parameters:
         input            string   latest user input message
@@ -175,63 +181,48 @@ def generate_response(input,
         temperature      float    consistency/creativity parameter 0.0-1.0
         top_p            float    sampling parameter 0.0-1.0
         maxchar          integer  number of chars at which to truncate returned
-                                  webapge contents
+                                  webapge contents (protecting token count)
+        debug            boolean  turn on verbose debug output (or not)
     Returns:
         reply            string   latest chatbot reply message
         metadata         dict     dict of non-msg reply info like token counts
     """
-
-    # Set messages default here instead of inline to handle None='default'
-    if model is None:
-        model = "gpt-4"
-    if temperature is None:
-        temperature = 1
-    if top_p is None:
-        top_p = 1
-    if messages is None:
-        messages = [{
-            "role": "system", "content": "The following is a conversation with"
-            " an AI assistant. The assistant is helpful, creative, friendly. "
-            "Its answers are polite but brief, only rarely exceeding "
-            "a single paragraph when really necessary to explain a point. "
-            "The assistant labels all markdown code snippets with the code "
-            "language. Mathematical answers and expressions written by the "
-            "assistant are always formatted in unicode characters rather than "
-            "latex, using full mathematical notation rather than programming "
-            "notation. The assistant only very occasionally uses emojis to "
-            "show enthusiasm."
-        }]
 
     # Check for possible URL in user-submitted text
     webpagetext = None
     skip_input = False
     url_search = re.search("<<(.*)>>", input, re.IGNORECASE)
     if url_search:
+        input = re.sub("<<(.*)>>", "", input)
         url = url_search.group(1)
         webpagetext, skip_input = get_url_contents(url, maxchar)
 
     if not skip_input:
-
+        reply = None
+        metadata = None
         if input:
             messages.append({"role": "user", "content": input})
             if webpagetext is not None:
-                messages.append({
-                    "role": "user",
-                    "content": webpagetext})
+                messages.append({"role": "user", "content": webpagetext})
 
-        # Still debugging readline & weblink details - clean this up later:
-        # print("Debug generate_response :")
-        # print(f"messages: {messages}")
-        # print(f"model: {model}")
-        # print(f"temperature: {temperature}")
-        # print(f"top_p: {top_p}")
+        if debug:
+            print("Debug output in generate_response() :")
+            print(f"messages before submit_to_gpt(): {messages}")
+            print(f"model: {model}, temp: {temperature}, top_p: {top_p}")
 
-        reply, metadata = submit_to_gpt(messages,
-                                        model,
-                                        temperature,
-                                        top_p)
+        try:
+            reply, metadata = submit_to_gpt(messages,
+                                            model,
+                                            temperature,
+                                            top_p)
+            if debug:
+                print(f"messages after submit_to_gpt(): {messages}")
 
-    return reply, metadata
+        except Exception as e:
+            print(f"Error from submit_to_gpt(): {e}")
+            pass
+
+    return reply, metadata, messages
 
 
 class CmdLineInterpreter(Cmd):
@@ -239,45 +230,21 @@ class CmdLineInterpreter(Cmd):
     Various configuration parameters are described in constructor doc-string.
     """
 
-    # Set default CmdLinInterpreter interface options:
-    # prompt = "Me: "
-    # prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
-    # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
-    prompt = "\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 "
-    # gptprompt = "GPT: "
-    # gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
-    # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
-    gptprompt = "\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 "
-    # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
-    intro = "Params: "
-    allow_injections = True
-    if darkdetect.isDark():
-        code_theme = "monokai"
-    elif darkdetect.isLight():
-        code_theme = "default"
-    history_file = os.path.expanduser('~/.gpt_history')
-
-    # Set default GPT options (None means use the default in generate_response)
-    messages = None
-    model = None
-    temperature = None
-    top_p = None
-    maxchar = None
-
     console = Console()
 
     def __init__(self,
-                 prompt=None,
-                 gptprompt=None,
-                 code_theme=None,
-                 intro=None,
-                 history_file=None,
-                 messages=None,
-                 model=None,
-                 temperature=None,
-                 top_p=None,
-                 maxchar=None,
-                 allow_injections=None,
+                 prompt="\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 ",
+                 gptprompt="\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 ",
+                 code_theme="monokai" if darkdetect.isDark() else "default",
+                 intro="Params: <params>\n<instructions>\n",
+                 history_file=os.path.expanduser('~/.gpt_history'),
+                 messages=MESSAGES,
+                 model=MODEL,
+                 temperature=TEMPERATURE,
+                 top_p=TOP_P,
+                 maxchar=MAXCHAR,
+                 allow_injections=ALLOW_INJECTIONS,
+                 debug=DEBUG,
                  ):
         """
         Parameters:
@@ -294,31 +261,21 @@ class CmdLineInterpreter(Cmd):
             top_p            float    sampling parameter 0.0-1.0
             maxchar          integer  numchars to trunc inserted webpage at
             allow_injections boolean  allow insertion of weblinks
+            debug            boolean  turn on verbose debug output (or not)
         """
 
-        # If constructor args specified any of these variables, update defaults
-        if prompt is not None:
-            self.prompt = prompt
-        if gptprompt is not None:
-            self.gptprompt = gptprompt
-        if code_theme is not None:
-            self.code_theme = code_theme
-        if intro is not None:
-            self.intro = intro
-        if messages is not None:
-            self.messages = messages
-        if model is not None:
-            self.model = model
-        if temperature is not None:
-            self.temperature = temperature
-        if top_p is not None:
-            self.top_p = top_p
-        if maxchar is not None:
-            self.maxchar = maxchar
-        if allow_injections is not None:
-            self.allow_injections = allow_injections
-        if history_file is not None:
-            self.history_file = history_file
+        self.prompt = prompt
+        self.gptprompt = gptprompt
+        self.code_theme = code_theme
+        self.intro = intro
+        self.history_file = history_file
+        self.messages = messages
+        self.model = model
+        self.temperature = temperature
+        self.top_p = top_p
+        self.maxchar = maxchar
+        self.allow_injections = allow_injections
+        self.debug = debug
 
         # Set up the readline handling:
         if 'libedit' in readline.__doc__:
@@ -330,18 +287,25 @@ class CmdLineInterpreter(Cmd):
 
         # Initialize the greeting/intro message on startup
         Cmd.__init__(self)
-        if self.model is not None:
-            self.intro += f"model={self.model}  "
-        if self.temperature is not None:
-            self.intro += f"temp={self.temperature}  "
-        if self.top_p is not None:
-            self.intro += f"top_p={self.top_p}  "
-        if self.maxchar is not None:
-            self.maxchar += f"maxchar={self.maxchar}  "
-        if self.allow_injections:
-            self.intro += ("\nYou can enter page contents of a URL by putting "
-                           "the URL in double chevrons like this: <<URL>> ")
-        self.intro += "\n"
+        d = locals()
+        self.intro = self.intro.replace(
+            '<params>',
+            # list the gpt model's params without the client UI params:
+            str({k:d[k] for k in d if
+                k!='self' and
+                k!='prompt' and
+                k!='gptprompt' and
+                k!='code_theme' and
+                k!='intro' and
+                k!='history_file' and
+                k!='messages'
+             })
+        )
+        self.intro = self.intro.replace(
+            '<instructions>',
+            "You can enter page contents of a URL by putting "
+             "the URL in double chevrons like this: <<URL>> "
+        )
         self.cmdloop(intro=self.intro)
 
     def cmdloop(self, intro):
@@ -367,22 +331,24 @@ class CmdLineInterpreter(Cmd):
         if line == "exit" or line == "quit" or line == "q":
             return self.do_exit()
 
-        # Still debugging readline & weblink details - clean this up later:
-        # print("Debug CmdLineInterpreter check:")
-        # print(f"messages: {self.messages}")
-        # print(f"model: {self.model}")
-        # print(f"temperature: {self.temperature}")
-        # print(f"top_p: {self.top_p}")
-
         # Append latest input line just entered to history file
         readline.append_history_file(1, self.history_file)
 
-        reply, metadata = generate_response(line,
-                                            self.messages,
-                                            self.model,
-                                            self.temperature,
-                                            self.top_p,
-                                            self.maxchar)
+        if self.debug:
+            print(f"messages before generate_response(): {self.messages}")
+
+        reply, metadata, self.messages = generate_response(
+            line,
+            self.messages,
+            self.model,
+            self.temperature,
+            self.top_p,
+            self.maxchar,
+            self.debug
+        )
+
+        if self.debug:
+            print(f"messages after generate_response(): {self.messages}")
 
         # Handle markdown and syntax highlighting and word/line wrapping;
         # technically could just use print() instead, just not as pretty.
@@ -418,20 +384,20 @@ def gradio_response(input, history):
         reply    string    latest chatbot reply message
     """
 
-    model = "gpt-4"
-    temperature = 0.2
-    top_p = 0.1
-    maxchar = 15000
-
-    messages = [{"role": "user" if i % 2 == 0 else "assistant",
-                 "content": content}
-                for sublist in history for i, content in enumerate(sublist)]
-    reply, metadata = generate_response(input,
-                                        messages,
-                                        model,
-                                        temperature,
-                                        top_p,
-                                        maxchar)
+    # Create messages list chatgpt expects from content list gradio expects
+    messages = [
+        {"role": "user" if i % 2 == 0 else "assistant", "content": content}
+        for sublist in history for i, content in enumerate(sublist)
+    ]
+    reply, metadata, messages = generate_response(
+        input,
+        messages=MESSAGES,
+        model=MODEL,
+        temperature=TEMPERATURE,
+        top_p=TOP_P,
+        maxchar=MAXCHAR,
+        debug=DEBUG
+    )
     return reply
 
 
@@ -457,9 +423,27 @@ if __name__ == '__main__':
         gr.ChatInterface(
             gradio_response,
             title="GPTclient Chatbot",
-            analytics_enabled=False
+            analytics_enabled=False,
         ).launch()
 
     else:
+        # prompt = "Me: "
+        # prompt = "\x01\033[1m\x02Me:\x01\033[0m\x02 "  # bold only
+        # prompt = "\x01\n\033[01;32m\x02Me:\x01\033[00m\x02 "  # color
+        ##prompt = "\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 "
+        # gptprompt = "GPT: "
+        # gptprompt = "\x01\033[1m\x02GPT:\x01\033[0m\x02 "  # bold only
+        # gptprompt = "\x01\033[01;36m\x02GPT:\x01\033[00m\x02 "
+        ##gptprompt = "\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 "
+        # gptprompt = "\n[bold blue]GPT[/bold blue]:  "  # use 'rich' formatting
+
         # Run the shell-based CLI:
-        CmdLineInterpreter(model="gpt-4", temperature=0.2, top_p=0.1)
+        CmdLineInterpreter(
+            prompt="\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 ",
+            gptprompt="\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 ",
+            model="gpt-4",
+            temperature=0.2,
+            top_p=0.1,
+            maxchar=20000,
+            debug=False,
+        )
