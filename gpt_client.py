@@ -50,6 +50,7 @@ from rich.markdown import Markdown
 
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
+webapp_state = {}
 
 # defaults for GPT parameters:
 MODEL = "gpt-4"
@@ -58,8 +59,7 @@ TOP_P = 0.1
 MAXCHAR = 20000
 ALLOW_INJECTIONS = True
 DEBUG = False
-MESSAGES = [{
-    "role": "system", "content": "The following is a conversation with"
+SYSMESSAGE = ("The following is a conversation with"
     " an AI assistant. The assistant is helpful, creative, friendly. "
     "Its answers are polite but brief, only rarely exceeding "
     "a single paragraph when really necessary to explain a point. "
@@ -68,15 +68,13 @@ MESSAGES = [{
     "assistant are always formatted in unicode characters rather than "
     "latex, using full mathematical notation rather than programming "
     "notation. The assistant only very occasionally uses emojis to "
-    "show enthusiasm."
-}]
+    "show enthusiasm.")
 # defaults for CLI parameters:
 PROMPT = "\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 "
 GPTPROMPT = "\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 "
 CODE_THEME = "monokai" if darkdetect.isDark() else "default"
 INTRO = "Params: <params>\n<instructions>\n"
 HISTORY_FILE = os.path.expanduser('~/.gpt_history')
-
 
 
 def submit_to_gpt(messages, model, temperature, top_p):
@@ -176,7 +174,7 @@ def get_url_contents(url, maxchar):
 
 
 def generate_response(input,
-                      messages=MESSAGES,
+                      messages=[{"role": "system", "content": SYSMESSAGE}],
                       model=MODEL,
                       temperature=TEMPERATURE,
                       top_p=TOP_P,
@@ -251,7 +249,7 @@ class CmdLineInterpreter(Cmd):
                  code_theme="monokai" if darkdetect.isDark() else "default",
                  intro="Params: <params>\n<instructions>\n",
                  history_file=os.path.expanduser('~/.gpt_history'),
-                 messages=MESSAGES,
+                 sysmessage=SYSMESSAGE,
                  model=MODEL,
                  temperature=TEMPERATURE,
                  top_p=TOP_P,
@@ -282,7 +280,7 @@ class CmdLineInterpreter(Cmd):
         self.code_theme = code_theme
         self.intro = intro
         self.history_file = history_file
-        self.messages = messages
+        self.messages = [{"role": "system", "content": sysmessage}]
         self.model = model
         self.temperature = temperature
         self.top_p = top_p
@@ -400,20 +398,21 @@ def gradio_response(input, history):
         this functions args are pinned via Gradio.ChatInterface() requirements.
     """
 
-    # Create messages list chatgpt expects from the content list gradio expects
-    messages = [
-        {"role": "user" if i % 2 == 0 else "assistant", "content": content}
-        for sublist in history for i, content in enumerate(sublist)
-    ]
+    if webapp_state["debug"]:
+        print("Debug output in gradio_response() :")
+        print(f"model: {webapp_state['model']}, "
+              f"temp: {webapp_state['temperature']}, "
+              f"top_p: {webapp_state['top_p']}")
+        print(f"messages before generate_response(): {webapp_state['messages']}")
 
     reply, metadata, messages = generate_response(
         input,
-        messages=MESSAGES,
-        model=MODEL,
-        temperature=TEMPERATURE,
-        top_p=TOP_P,
-        maxchar=MAXCHAR,
-        debug=DEBUG
+        messages=webapp_state["messages"],
+        model=webapp_state["model"],
+        temperature=webapp_state["temperature"],
+        top_p=webapp_state["top_p"],
+        maxchar=webapp_state["maxchar"],
+        debug=webapp_state["debug"]
     )
 
     return reply
@@ -432,7 +431,7 @@ def common_options(f):
         click.option('--top_p', default=TOP_P, help='Sampling parameter'),                                                                                                                  click.option('--maxchar', default=20000, help='Number of chars at which to truncate returned webpage contents'),
         click.option('--allow_injections', default=ALLOW_INJECTIONS, help='Allow insertion of weblinks'),
         click.option('--maxchar', default=MAXCHAR, help='Truncate webpage content at this number of characters'),
-        click.option('--messages', default=MESSAGES, help='Initial system message specify chatbot personality/functionality'),
+        click.option('--sysmessage', default=SYSMESSAGE, help='Initial system message specifying chatbot personality/functionality'),
         click.option('--debug', default=DEBUG, help='Enable verbose debug output'),
     ]
     for option in reversed(options):
@@ -459,6 +458,15 @@ def webapp(**kwargs):
        function so they can be used in the args of generate_response().  But
        this functions args are pinned via Gradio.ChatInterface() requirements.
     """
+    webapp_state.update({
+        "messages": [{"role": "system", "content": kwargs["sysmessage"]}],
+        "model": kwargs["model"],
+        "temperature": kwargs["temperature"],
+        "top_p": kwargs["top_p"],
+        "maxchar": kwargs["maxchar"],
+        "allow_injections": kwargs["allow_injections"],
+        "debug": kwargs["debug"]
+    })
     gr.ChatInterface(
         gradio_response,
         title="GPTclient Chatbot",
