@@ -391,11 +391,6 @@ def gradio_response(input, history):
                            representing the chat history.
     Returns:
         reply    string    latest chatbot reply message
-
-    To-Do:
-        Still need to find a good way to pipe the GPT parameters into this
-        function so they can be used in the args of generate_response().  But
-        this functions args are pinned via Gradio.ChatInterface() requirements.
     """
 
     if webapp_state["debug"]:
@@ -452,12 +447,7 @@ def cli(**kwargs):
 @clickgrp.command()
 @common_options
 def webapp(**kwargs):
-    """Command for Gradio-based web app entry point.
-
-       To-do: Still need to find a good way to pipe the GPT parameters into this
-       function so they can be used in the args of generate_response().  But
-       this functions args are pinned via Gradio.ChatInterface() requirements.
-    """
+    """Command for Gradio-based web app entry point"""
     webapp_state.update({
         "messages": [{"role": "system", "content": kwargs["sysmessage"]}],
         "model": kwargs["model"],
