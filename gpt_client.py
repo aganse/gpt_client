@@ -53,10 +53,12 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 webapp_state = {}
 
 # defaults for GPT parameters:
-MODEL = "gpt-4"
+MODEL = "gpt-4-1106-preview"
 TEMPERATURE = 0.2
 TOP_P = 0.1
-MAXCHAR = 20000
+MAXCHAR = 20000  # recommend 20000 for 8192 tokens in gpt-4.
+                 # gpt-4-1106-preview takes 128k tokens (15x above) but let's
+                 # still leave at 20000 for now just to protect against mistake.
 ALLOW_INJECTIONS = True
 DEBUG = False
 SYSMESSAGE = ("The following is a conversation with"
@@ -107,6 +109,9 @@ def submit_to_gpt(messages, model, temperature, top_p):
     except openai.OpenAIError as e:
         errormsg = e.response["error"]["message"]
         print(f"OpenAI API Error: {errormsg}")
+        return ""
+    except openai.error.APIConnectionError as e:
+        print(f"Sorry, wasn't able to connect to API for some reason: {e.reason}.")
         return ""
     except openai.error.ServiceUnavailableError as e:
         print(f"Sorry, API appears to be temporarily unavailable: {e.reason}.")
@@ -345,11 +350,23 @@ class CmdLineInterpreter(Cmd):
         if line == "exit" or line == "quit" or line == "q":
             return self.do_exit()
 
+        # Turn on multi-line entry mode if <<multi>> tag in input line;
+        # mode ends with <<end>> tag.
+        if "<<multi>>" in line:
+            while True:
+                line = line.replace("<<multi>>", "")
+                next_line = input()
+                if "<<end>>" in next_line:
+                    line += "\n" + next_line.replace("<<end>>", "").replace("<<multi>>", "")
+                    break
+                line += "\n" + next_line.replace("<<multi>>", "")
+
         # Append latest input line just entered to history file
         readline.append_history_file(1, self.history_file)
 
         if self.debug:
             print(f"messages before generate_response(): {self.messages}")
+            print(f"line before generate_response(): {line}")
 
         reply, metadata, self.messages = generate_response(
             line,
