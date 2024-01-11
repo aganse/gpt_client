@@ -1,11 +1,12 @@
 # A simple Python-based OpenAI GPT client.
 
-Compared to the ChatGPT website, this tool is more configurable, is only a few
+Compared to the ChatGPT website, this tool is a bit more configurable, is only a few
 hundred lines of code in one module so is easy to understand/follow/modify, and
 it allows for use of GPT-4 and plug-in options (like inserting weblinks without
 paying the hefty monthly fee for ChatGPT-Plus).  Note it does involve paying
-fees for the OpenAI calls - but for one's individual use rather than public
-internet app use by many people, the API fees are literally pennies per month.
+fees for the OpenAI API calls - but for one's individual use rather than public
+internet app use by many people, even at heavy usage the API fees total far less
+per month than the website.
 This app can be run either as a terminal/readline based CLI or as a
 browser based web-app:
 
@@ -27,23 +28,23 @@ creating an OpenAI account if you don't have one already) and put that key
 in your shell environment, e.g. `export OPENAI_API_KEY=xyz123xyz123...`
 
 Note that any client outside of the one on OpenAI's website (which is free
-for ChatGPT) requires an [API key](https://platform.openai.com/account/api-keys)
+for ChatGPT3.5) requires an [API key](https://platform.openai.com/account/api-keys)
 to access the API, and making calls to this API does 
 [cost money](https://openai.com/pricing#language-models).
-However, it's super cheap if just using it oneself for reference queries (e.g.
-I generally just use it as a stand-in for Google/Wikipedia/StackOverflow),
-as opposed to serving it out to zillions of other users to use in a web app.
-Like in my initial two days of fairly heavy usage I racked up a whole $0.20;
-after a few months of light-moderate usage since then, I'm now up to $0.50.
+However, it's quite cheap even at heavy usage if just using it oneself,
+as opposed to serving it out to zillions of users to use in a web app.
+In my initial two days I racked up a whole $0.20; now in heavy daily usage for
+coding templating, database queries, and other technical assistance in my work
+I've now gotten up to almost $7/month (that's with that latest gpt-4-1106-preview model).
 
-As a new user of the OpenAI platform (as of this Aug 2023 writing anyway)
-you'll only have access to the gpt-3.5-turbo model, not gpt-4.  However, I
-found that I was able to get access to gpt-4 use myself by first signiing up
+As a new user of the OpenAI platform you may initially only have access to the
+gpt-3.5-turbo model, not gpt-4.  (This might be better by the time you read this.)
+I found that I was able to get access to gpt-4 API use myself by first signing up
 onto its waitlist on the OpenAI website, then signing up for just one month
 of the $20/month ChatGPT-Plus program on the website, cancelling that after one
 month, and a week or so later they sent me an email saying my waitlist position
 had come up because they prioritized folks who'd paid for at least one month of
-ChatGPT-Plus.  I guess it's no guarantee (they hadn't said this on the waitlist
+ChatGPT-Plus.  I guess it's no guarantee (they hadn't stated this on the waitlist
 website) but maybe info that other potential users here would want to know.
 
 ### Install dependencies and run the app:
