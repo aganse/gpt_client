@@ -43,7 +43,6 @@ import urllib
 from bs4 import BeautifulSoup
 import click
 import darkdetect
-import gradio as gr
 import openai
 from rich.console import Console
 from rich.markdown import Markdown
@@ -75,7 +74,8 @@ SYSMESSAGE = ("The following is a conversation with"
 PROMPT = "\n\001\033[01;32m\002😃\001\033[37m\033[01;32m\002 Me:\001\033[00m\002 "
 GPTPROMPT = "\001\033[01;32m\002🤖\001\033[37m\033[01;36m\002 GPT:\001\033[00m\002 "
 CODE_THEME = "monokai" if darkdetect.isDark() else "default"
-INTRO = "Params: <params>\n<instructions>\n"
+INTRO = "\n<instructions>\n"
+# INTRO = "Params: <params>\n<instructions>\n"
 HISTORY_FILE = os.path.expanduser('~/.gpt_history')
 
 
@@ -144,6 +144,7 @@ def get_url_contents(url, maxchar):
         skip_input   boolean   success flag to prevent OpenAI call if problem
     """
 
+    webpagetext = None
     skip_input = False
 
     try:
@@ -169,7 +170,7 @@ def get_url_contents(url, maxchar):
                     "------------------\n") + webpagetext
                 webpagetext = webpagetext[:maxchar]
     except urllib.error.HTTPError as e:
-        print(f"Sorry, HTTP error: {e.code} in trying to access URL..")
+        print(f"Sorry, HTTP error: {e.code} in trying to access URL.")
         skip_input = True
     except urllib.error.URLError as e:
         print(f"Sorry, URL error: {e.reason} in trying to access URL.")
@@ -216,9 +217,9 @@ def generate_response(input,
         url = url_search.group(1)
         webpagetext, skip_input = get_url_contents(url, maxchar)
 
+    reply = None
+    metadata = None
     if not skip_input:
-        reply = None
-        metadata = None
         if input:
             messages.append({"role": "user", "content": input})
             if webpagetext is not None:
@@ -322,8 +323,13 @@ class CmdLineInterpreter(Cmd):
         )
         self.intro = self.intro.replace(
             '<instructions>',
-            "You can enter page contents of a URL by putting "
-             "the URL in double chevrons like this: <<URL>> "
+            "Enter page contents of a URL by putting URL in double chevrons"
+            " like so: <<URL>>.\n"
+            "To enter or paste multiple lines before submitting, "
+            "you can enter the <<multi>>\n"
+            "tag anywhere in your text, and then after you enter <<end>> tag "
+            "and return,\n"
+            "entry will be submitted."
         )
         self.cmdloop(intro=self.intro)
 
@@ -381,21 +387,22 @@ class CmdLineInterpreter(Cmd):
         if self.debug:
             print(f"messages after generate_response(): {self.messages}")
 
-        # Handle markdown and syntax highlighting and word/line wrapping;
-        # technically could just use print() instead, just not as pretty.
-        self.console.print(
-            f"[grey78][{metadata['prompt_tokens']} prompt-tokens; "
-            "includes resubmission of all history this session plus "
-            "page contents of any urls given...][/grey78]")
-        self.console.print(" ")
-        self.console.print(
-            Markdown(self.gptprompt + reply, code_theme=self.code_theme)
-        )
-        self.console.print(
-            f"[grey78][{metadata['completion_tokens']} "
-            "completion-tokens just for this response...][/grey78]"
-        )
-        self.console.print(" ")
+        if reply is not None:
+            # Handle markdown and syntax highlighting and word/line wrapping;
+            # technically could just use print() instead, just not as pretty.
+            self.console.print(
+                f"[grey78][{metadata['prompt_tokens']} prompt-tokens; "
+                "includes resubmission of all history this session plus "
+                "page contents of any urls given...][/grey78]")
+            self.console.print(" ")
+            self.console.print(
+                Markdown(self.gptprompt + reply, code_theme=self.code_theme)
+            )
+            self.console.print(
+                f"[grey78][{metadata['completion_tokens']} "
+                "completion-tokens just for this response...][/grey78]"
+            )
+            self.console.print(" ")
 
 
 def gradio_response(input, history):
@@ -468,6 +475,7 @@ def cli(**kwargs):
 @common_options
 def webapp(**kwargs):
     """Command for Gradio-based web app entry point"""
+    import gradio as gr
     webapp_state.update({
         "messages": [{"role": "system", "content": kwargs["sysmessage"]}],
         "model": kwargs["model"],
