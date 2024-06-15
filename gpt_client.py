@@ -52,13 +52,14 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 webapp_state = {}
 
 # defaults for GPT parameters:
-MODEL = "gpt-4-1106-preview"
+MODEL = "gpt-4o"  # "gpt-4-turbo", "gpt-4-1106-preview"
 TEMPERATURE = 0.2
 TOP_P = 0.1
 MAXCHAR = 20000  # recommend 20000 for 8192 tokens in gpt-4.
                  # gpt-4-1106-preview takes 128k tokens (15x above) but let's
                  # still leave at 20000 for now just to protect against mistake.
 ALLOW_INJECTIONS = True
+TOKEN_TRACKING = False
 DEBUG = False
 SYSMESSAGE = ("The following is a conversation with"
     " an AI assistant. The assistant is helpful, creative, friendly. "
@@ -262,6 +263,7 @@ class CmdLineInterpreter(Cmd):
                  model=MODEL,
                  temperature=TEMPERATURE,
                  top_p=TOP_P,
+                 token_tracking=TOKEN_TRACKING,
                  maxchar=MAXCHAR,
                  allow_injections=ALLOW_INJECTIONS,
                  debug=DEBUG,
@@ -293,6 +295,7 @@ class CmdLineInterpreter(Cmd):
         self.model = model
         self.temperature = temperature
         self.top_p = top_p
+        self.token_tracking = token_tracking
         self.maxchar = maxchar
         self.allow_injections = allow_injections
         self.debug = debug
@@ -390,18 +393,20 @@ class CmdLineInterpreter(Cmd):
         if reply is not None:
             # Handle markdown and syntax highlighting and word/line wrapping;
             # technically could just use print() instead, just not as pretty.
-            self.console.print(
-                f"[grey78][{metadata['prompt_tokens']} prompt-tokens; "
-                "includes resubmission of all history this session plus "
-                "page contents of any urls given...][/grey78]")
+            if self.token_tracking:
+                self.console.print(
+                    f"[grey78][{metadata['prompt_tokens']} prompt-tokens; "
+                    "includes resubmission of all history this session plus "
+                    "page contents of any urls given...][/grey78]")
             self.console.print(" ")
             self.console.print(
                 Markdown(self.gptprompt + reply, code_theme=self.code_theme)
             )
-            self.console.print(
-                f"[grey78][{metadata['completion_tokens']} "
-                "completion-tokens just for this response...][/grey78]"
-            )
+            if self.token_tracking:
+                self.console.print(
+                    f"[grey78][{metadata['completion_tokens']} "
+                    "completion-tokens just for this response...][/grey78]"
+                )
             self.console.print(" ")
 
 
@@ -453,6 +458,7 @@ def common_options(f):
         click.option('--top_p', default=TOP_P, help='Sampling parameter'),                                                                                                                  click.option('--maxchar', default=20000, help='Number of chars at which to truncate returned webpage contents'),
         click.option('--allow_injections', default=ALLOW_INJECTIONS, help='Allow insertion of weblinks'),
         click.option('--maxchar', default=MAXCHAR, help='Truncate webpage content at this number of characters'),
+        click.option('--token_tracking', default=TOKEN_TRACKING, help='Toggle token usage display on each response'),
         click.option('--sysmessage', default=SYSMESSAGE, help='Initial system message specifying chatbot personality/functionality'),
         click.option('--debug', default=DEBUG, help='Enable verbose debug output'),
     ]
